@@ -17,16 +17,11 @@
 bits 16
 
 mov ah, 1
-mov bh, 2
 mov al, 3
-mov cl, 25
-mov bl, 4
-mov ch, 50
-mov dx, 4
-
-mov ax, 1
 mov bx, 2
+mov bh, 1
 mov cx, 3
+mov cl, 5
 mov dx, 4
 
 mov sp, 5

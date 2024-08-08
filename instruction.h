@@ -13,8 +13,12 @@
 #define set_w(c, b) c |= (b) << 4
 #define set_m(c, b) c |= b 
 
-#define MAX_OPERAND 2
+#define BIT_MASK_8_LO 0x00ff
+#define BIT_MASK_8_HI 0xff00
+#define BIT_MASK_16   0xffff
 
+#define MAX_OPERAND     2
+#define BYTE_BIT_LENGTH 8
 
 typedef enum mod_e: u8 {
     MOD_00,
@@ -68,9 +72,9 @@ typedef enum word_type_e: u8 {
 } word_type_e;
 
 typedef struct reg_t {
-    reg_e reg;
-    u8    offset; // low / high byte
-    u8    length;
+    reg_e       reg;
+    bit_width_e offset; // low / high byte
+    bit_width_e length; // measured in byte
 } reg_t;
 
 typedef struct word_t {
@@ -80,9 +84,9 @@ typedef struct word_t {
 } word_t;
 
 typedef struct eff_addr_expr_t {
-    u8     da;
-    word_t disp;
-    reg_t  terms[2];
+    u8            da;
+    word_t        disp;
+    const reg_t  *terms[2];
 } eff_addr_expr_t;
 
 
@@ -91,7 +95,7 @@ typedef struct operand_t {
     union {
         eff_addr_expr_t expr;
         word_t          word;
-        reg_t           reg;
+        const reg_t     *reg;
     };
 } operand_t;
 

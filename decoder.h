@@ -38,13 +38,13 @@ static i32 print_word(word_t *w);
 
 static i32 print_eff_addr_expr(eff_addr_expr_t *e);
 
-static i32 print_reg(reg_t *r);
+static i32 print_reg(const reg_t *r);
 
 static i32 print_operand(operand_t *o);
 
 static void print_jmp(instruction_t *in);
 
-void print_instruction(instruction_t *in);
+void print_instruction(instruction_t *in, u8 show_base_addr, u8 as_comment);
 
 
 #endif

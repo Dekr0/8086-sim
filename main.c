@@ -30,8 +30,10 @@ int main(int argc, char **argv) {
     }
 
     for (u32 i = 0; i < src->count; i++) {
-        print_instruction(src->i_arr + i);
+        print_instruction(src->i_arr + i, 1, 0);
+        printf("\n");
     }
+    printf("\n");
 
     if (exec) {
         simulate(src, mem);

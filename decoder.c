@@ -3,16 +3,12 @@
 #include <stdlib.h>
 
 #include "decoder.h"
-#include "instruction.h"
 #include "table.h"
-#include "table.c"
 #include "type.h"
 
 #define unpack_b16_to_int(lo, hi) (i32) hi << 8 | (i32) lo
 #define decode_jump_variant(raw_ctrl_bits) raw_ctrl_bits & 0b1111
 #define decode_loop_variant(raw_ctrl_bits) raw_ctrl_bits & 0b11
-
-#define META
 
 
 static opcode_e decode_opcode(u8 b1, u8 b2) {
@@ -87,8 +83,8 @@ static i32 decode_eff_addr_expr(const u8 c, decoder_context_t *dc, operand_t *o)
     const u8 m = get_m(c);
     const u8 rsm = mem[*a + 1] & 7;
     o->type = OPERAND_EFF_ADDR_EXPR;
-    o->expr.terms[0] = eff_addr_exprs[rsm][0];
-    o->expr.terms[1] = eff_addr_exprs[rsm][1];
+    o->expr.terms[0] = get_eff_addr_exprs(rsm, 0);
+    o->expr.terms[1] = get_eff_addr_exprs(rsm, 1);
     *a += 2;
     switch (m) {
     case MOD_11:
@@ -122,7 +118,7 @@ static i32 decode_mod_rsm(const u8 c, decoder_context_t *dc, operand_t *o) {
 
     if (m == MOD_11) {
         o->type = OPERAND_REG;
-        o->reg = regs[mem[*a + 1] & 7][w];
+        o->reg = get_regs(mem[*a + 1] & 7, w);
         *a += 2;
         return 0;
     }
@@ -135,7 +131,7 @@ static i32 decode_mod_reg_rsm(decoder_context_t *dc, instruction_t *i) {
     u32 *a   = dc->a;
     set_m(i->ctrl_bits, mem[*a + 1] >> 6 & 3);
     i->operands[0].type = OPERAND_REG;
-    i->operands[0].reg = regs[mem[*a + 1] >> 3 & 7][get_w(i->ctrl_bits)];
+    i->operands[0].reg = get_regs(mem[*a + 1] >> 3 & 7, get_w(i->ctrl_bits));
     if (decode_mod_rsm(i->ctrl_bits, dc, &i->operands[1]) == -1) 
     {
         return -1;
@@ -163,27 +159,29 @@ static i32 decode_imm_reg(decoder_context_t *dc, instruction_t *i) {
     u8  *mem = dc->mem->mem;
     u32 *a   = dc->a;
     i->operands[1].type = OPERAND_REG;
-    i->operands[1].reg  = regs[mem[*a] & 7][get_w(i->ctrl_bits)];
+    i->operands[1].reg  = get_regs(mem[*a] & 7, get_w(i->ctrl_bits));
     *a += 1;
     return decode_imm(i->ctrl_bits, dc, &i->operands[0]);
 }
 
 static i32 decode_acc_mem(decoder_context_t *dc, instruction_t *i) {
+    const u8 w = get_w(i->ctrl_bits);
     i->operands[0].type = OPERAND_REG;
-    i->operands[0].reg = regs[0][i->ctrl_bits >> 4 & 1];
+    i->operands[0].reg = get_regs(0, w);
     i->operands[1].type = OPERAND_WORD;
     i->operands[1].word.type = WORD_TYPE_ADDR;
-    i->operands[1].word.width = i->ctrl_bits >> 4 & 1 ? BIT_SIZE_16 : BIT_SIZE_8;
+    i->operands[1].word.width = w ? BIT_SIZE_16 : BIT_SIZE_8;
     *dc->a += 1;
     return decode_word(dc, &i->operands[1].word);
 }
 
 static i32 decode_acc_imm(decoder_context_t *dc, instruction_t *i) {
+    const u8 w = get_w(i->ctrl_bits);
     i->operands[0].type = OPERAND_REG;
-    i->operands[0].reg = regs[0][i->ctrl_bits >> 4 & 1];
+    i->operands[0].reg = get_regs(0, w);
     i->operands[1].type = OPERAND_WORD;
     i->operands[1].word.type = WORD_TYPE_IMM;
-    i->operands[1].word.width = i->ctrl_bits >> 4 & 1 ? BIT_SIZE_16 : BIT_SIZE_8;
+    i->operands[1].word.width = w ? BIT_SIZE_16 : BIT_SIZE_8;
     *dc->a += 1;
     return decode_word(dc, &i->operands[1].word);
 }
@@ -286,7 +284,7 @@ src_instructions_t *load_instruction(memory_t *mem_t) {
             set_w(i->ctrl_bits, 1);
             set_m(i->ctrl_bits, mem[a + 1] >> 6 & 3);
             i->operands[0].type = OPERAND_REG;
-            i->operands[0].reg  = seg_regs[mem[a + 1] >> 3 & 3];
+            i->operands[0].reg  = get_seg_regs(mem[a + 1] >> 3 & 3);
             if (decode_mod_rsm(i->ctrl_bits, &dc, &i->operands[1]) == -1) { 
                 abort = 1;
                 break;
@@ -449,10 +447,10 @@ static i32 print_eff_addr_expr(eff_addr_expr_t *e) {
         nwrite += printf("]");
         return nwrite;
     }
-    print_reg(&e->terms[0]);
-    if (e->terms[1].reg != REG_NONE) { 
+    print_reg(e->terms[0]);
+    if (e->terms[1]->reg != REG_NONE) { 
         nwrite += printf("+");
-        nwrite += print_reg(&e->terms[1]);
+        nwrite += print_reg(e->terms[1]);
     }
     nwrite += print_word(&e->disp);
     nwrite += printf("]");
@@ -460,10 +458,10 @@ static i32 print_eff_addr_expr(eff_addr_expr_t *e) {
 }
 
 
-static i32 print_reg(reg_t *r) {
-    i32 nwrite = printf("%s", reg_name[r->reg]);
+static i32 print_reg(const reg_t *r) {
+    i32 nwrite = printf("%s", get_reg_name(r->reg));
     if (r->reg > REG_B) { return nwrite; }
-    if (r->length == 1) {
+    if (r->length == BIT_SIZE_8) {
         nwrite += printf("%s", r->offset ? "h" : "l");
     } else {
         nwrite += printf("x");
@@ -483,7 +481,7 @@ static i32 print_operand(operand_t *o) {
         nwrite += print_word(&o->word);
         break;
     case OPERAND_REG:
-        nwrite += print_reg(&o->reg);
+        nwrite += print_reg(o->reg);
         break;
     }
     return nwrite;
@@ -494,10 +492,10 @@ static void print_jmp(instruction_t *in) {
     const i32 jmp = in->operands[0].word.value + in->base_addr + in->size;
     switch (in->opcode) {
     case COND_JMP:
-        name = cond_jmp[decode_jump_variant(in->raw_ctrl_bits1)];
+        name = get_cond_jmp(decode_jump_variant(in->raw_ctrl_bits1));
         break;
     case LOOP_JMP:
-        name = loop_jmp[decode_loop_variant(in->raw_ctrl_bits1)];
+        name = get_loop_jmp(decode_loop_variant(in->raw_ctrl_bits1));
         break;
     default:
         assert(0);
@@ -506,12 +504,15 @@ static void print_jmp(instruction_t *in) {
     printf("jmp_addr%d\n", jmp);
 }
 
-void print_instruction(instruction_t *in) {
-#ifdef META
-    printf("; address = ??? + 0x%x, instruction width = %u\n", in->base_addr, 
-            in->size);
-#endif /* ifdef META */
+void print_instruction(instruction_t *in, u8 show_base_addr, u8 as_comment) {
+    if (show_base_addr) {
+        printf("; address = ??? + 0x%x, instruction width = %u\n", in->base_addr, 
+                in->size);
+    }
     if (in->is_jmp_dest) {
+        if (as_comment) {
+            printf("; ");
+        }
         printf("jmp_addr%d:\n", in->base_addr);
     }
     const char *name;
@@ -545,6 +546,9 @@ void print_instruction(instruction_t *in) {
         print_jmp(in);
         return;
     }
+    if (as_comment) {
+        printf("; ");
+    }
     printf("%s ", name);
     switch (in->prefix) {
     case PREFIX_NONE:
@@ -555,7 +559,6 @@ void print_instruction(instruction_t *in) {
     }
     if (in->operands[1].type == OP_NONE) {
         print_operand(&in->operands[0]);
-        printf("\n");
         return;
     }
     if (get_d(in->ctrl_bits)) {
@@ -567,5 +570,4 @@ void print_instruction(instruction_t *in) {
         printf(",");
         print_operand(&in->operands[0]);
     }
-    printf("\n");
 }

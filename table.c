@@ -16,30 +16,43 @@ const char reg_name[13][3] = {
 };
 
 const reg_t eff_addr_exprs[8][2] = {
-    { {REG_B,  0, 2}, {REG_SI,   0, 2} },
-    { {REG_B,  0, 2}, {REG_DI,   0, 2} },
-    { {REG_BP, 0, 2}, {REG_SI,   0, 2} },
-    { {REG_BP, 0, 2}, {REG_DI,   0, 2} },
-    { {REG_SI, 0, 2}, {REG_NONE, 0, 0} },
-    { {REG_DI, 0, 2}, {REG_NONE, 0, 0} },
-    { {REG_BP, 0, 2}, {REG_NONE, 0, 0} }, // exception when mod = 00
-    { {REG_B,  0, 2}, {REG_NONE, 0, 0} }, 
+    { {REG_B,  BIT_SIZE_0, BIT_SIZE_16}, {REG_SI,   BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_B,  BIT_SIZE_0, BIT_SIZE_16}, {REG_DI,   BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_BP, BIT_SIZE_0, BIT_SIZE_16}, {REG_SI,   BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_BP, BIT_SIZE_0, BIT_SIZE_16}, {REG_DI,   BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_SI, BIT_SIZE_0, BIT_SIZE_16}, {REG_NONE, BIT_SIZE_0, BIT_SIZE_0 } },
+    { {REG_DI, BIT_SIZE_0, BIT_SIZE_16}, {REG_NONE, BIT_SIZE_0, BIT_SIZE_0 } },
+    // exception when mod = 00
+    { {REG_BP, BIT_SIZE_0, BIT_SIZE_16}, {REG_NONE, BIT_SIZE_0, BIT_SIZE_0 } },
+    { {REG_B,  BIT_SIZE_0, BIT_SIZE_16}, {REG_NONE, BIT_SIZE_0, BIT_SIZE_0 } }, 
 };
 
 const reg_t regs[8][2] = {
-    { {REG_A, 0, 1}, { REG_A,  0, 2} },
-    { {REG_C, 0, 1}, { REG_C,  0, 2} },
-    { {REG_D, 0, 1}, { REG_D,  0, 2} },
-    { {REG_B, 0, 1}, { REG_B,  0, 2} },
-    { {REG_A, 1, 1}, { REG_SP, 0, 2} },
-    { {REG_C, 1, 1}, { REG_BP, 0, 2} },
-    { {REG_D, 1, 1}, { REG_SI, 0, 2} },
-    { {REG_B, 1, 1}, { REG_DI, 0, 2} },
+    { {REG_A, BIT_SIZE_0, BIT_SIZE_8}, { REG_A,  BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_C, BIT_SIZE_0, BIT_SIZE_8}, { REG_C,  BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_D, BIT_SIZE_0, BIT_SIZE_8}, { REG_D,  BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_B, BIT_SIZE_0, BIT_SIZE_8}, { REG_B,  BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_A, BIT_SIZE_8, BIT_SIZE_8}, { REG_SP, BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_C, BIT_SIZE_8, BIT_SIZE_8}, { REG_BP, BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_D, BIT_SIZE_8, BIT_SIZE_8}, { REG_SI, BIT_SIZE_0, BIT_SIZE_16} },
+    { {REG_B, BIT_SIZE_8, BIT_SIZE_8}, { REG_DI, BIT_SIZE_0, BIT_SIZE_16} },
 };
 
 const reg_t seg_regs[4] = {
-    { REG_ES, 0, 2 },
-    { REG_CS, 0, 2 },
-    { REG_SS, 0, 2 },
-    { REG_DS, 0, 2 }
+    { REG_ES, BIT_SIZE_0, BIT_SIZE_16 },
+    { REG_CS, BIT_SIZE_0, BIT_SIZE_16 },
+    { REG_SS, BIT_SIZE_0, BIT_SIZE_16 },
+    { REG_DS, BIT_SIZE_0, BIT_SIZE_16 }
 };
+
+const char *get_reg_name(u8 i) { return reg_name[i]; }
+
+const char *get_cond_jmp(u8 i) { return cond_jmp[i]; }
+
+const char *get_loop_jmp(u8 i) { return loop_jmp[i]; }
+
+const reg_t *get_regs(u8 i, u8 w) { return &regs[i][w]; }
+
+const reg_t *get_eff_addr_exprs(u8 i, u8 w) { return &eff_addr_exprs[i][w]; }
+
+const reg_t *get_seg_regs(u8 i) { return &seg_regs[i]; }
