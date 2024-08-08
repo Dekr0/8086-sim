@@ -78,7 +78,7 @@ typedef struct reg_t {
 } reg_t;
 
 typedef struct word_t {
-    i32         value;
+    u32         value;
     word_type_e type;
     bit_width_e width;
 } word_t;

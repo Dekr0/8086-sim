@@ -10,7 +10,7 @@ RSM_DIR := ./reassmeble
 SRCS := $(shell find $(SRC_DIR) -name '*.c' ! -name "mystring.*")
 ASMS := $(shell find $(ASM_DIR) -name '*.asm')
 
-UNIT_TEST_TARGET := i
+UNIT_TEST_TARGET := j
 UNIT_TEST_FILE := $(BIN_DIR)/test_$(UNIT_TEST_TARGET)
 UNIT_TEST_DSM_OUTPUT := $(DSM_DIR)/test_$(UNIT_TEST_TARGET).asm
 UNIT_TEST_BIN_OUTPUT := $(RSM_DIR)/test_$(UNIT_TEST_TARGET)

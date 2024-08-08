@@ -53,7 +53,7 @@ static i32 decode_word(decoder_context_t *dc, word_t *w) {
             printf("decode_word: decoder is out of source code bound\n");
             return -1;
         }
-        w->value = (i8) mem[*a];
+        w->value = (u8) mem[*a];
         *a += 1;
         break;
     case BIT_SIZE_0:
