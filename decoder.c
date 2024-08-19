@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "decoder.h"
+#include "instruction.h"
 #include "table.h"
 #include "type.h"
 
@@ -46,6 +47,9 @@ static i32 decode_word(decoder_context_t *dc, word_t *w) {
             return -1;
         }
         w->value = unpack_b16_to_int(mem[*a], mem[*a + 1]);
+        if (w->value >> 15) {
+            w->sign = 1;
+        }
         *a += 2;
         break;
     case BIT_SIZE_8:
@@ -54,6 +58,9 @@ static i32 decode_word(decoder_context_t *dc, word_t *w) {
             return -1;
         }
         w->value = (u8) mem[*a];
+        if (w->value >> 7) {
+            w->sign = 1;
+        }
         *a += 1;
         break;
     case BIT_SIZE_0:
@@ -74,7 +81,8 @@ static i32 decode_imm(const u8 c, decoder_context_t *dc, operand_t *o) {
     } else {
         o->word.width = BIT_SIZE_8;
     }
-    return decode_word(dc, &o->word);
+    i32 r = decode_word(dc, &o->word);
+    return r;
 }
 
 static i32 decode_eff_addr_expr(const u8 c, decoder_context_t *dc, operand_t *o) {
@@ -429,11 +437,45 @@ static i32 print_word(word_t *w) {
         break;
     case WORD_TYPE_DISP:
         if (!w->value) return 0;
-        nwrite += w->value > 0 ? printf("+%d", w->value) : printf("-%d", 
-                -w->value);
+        if (w->sign) {
+            switch (w->width) {
+            case BIT_SIZE_8:
+                if ((i8) w->value > 0) {
+                    nwrite += printf("+ %d", (i8) w->value);
+                } else {
+                    nwrite += printf("%d", (i8) w->value);
+                }
+                break;
+            case BIT_SIZE_16:
+                if ((i16) w->value > 0) {
+                    nwrite += printf("+ %d", (i16) w->value);
+                } else {
+                    nwrite += printf("%d", (i16) w->value);
+                }
+                break;
+            default:
+                assert(0);
+            }
+        } else {
+            nwrite += printf("+ %d", w->value);
+        }
         break;
     case WORD_TYPE_IMM:
-        nwrite += printf("%d", w->value);
+        if (!w->value) return 0;
+        if (w->sign) {
+            switch (w->width) {
+            case BIT_SIZE_8:
+                nwrite += printf("%d", (i8) w->value);
+                break;
+            case BIT_SIZE_16:
+                nwrite += printf("%d", (i16) w->value);
+                break;
+            default:
+                assert(0);
+            }
+        } else {
+            nwrite += printf("%d", w->value);
+        }
         break;
     }
     return nwrite;

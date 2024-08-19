@@ -6,13 +6,15 @@
 #include "type.h"
 
 
-i32 read_reg(cpu_t *c, const reg_t *r);
+u32 read_reg(cpu_t *c, const reg_t *r);
 
 void write_reg_val(cpu_t *c, const reg_t *r, u32 v);
 
 void write_reg_reg(cpu_t *c, const reg_t *dest, const reg_t *src);
 
-i32 binary_add(u16 *f, u32 a, u32 b, const u8 s, const bit_width_e w);
+u32 binary_add(u16 *reg_flag, u32 a, u32 b, const bit_width_e bit_width_e);
+
+u32 binary_sub(u16 *reg_flag, u32 b, u32 a, const bit_width_e bit_width_e);
 
 i32 simulate(src_instructions_t *src, memory_t *mem);
 

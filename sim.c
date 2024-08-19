@@ -8,126 +8,408 @@
 #include "table.h"
 #include "type.h"
 
+typedef u32 (*arithmetic)(u16 *, u32, u32, const bit_width_e);
 
-i32 read_reg(cpu_t *c, const reg_t *r) {
-    assert(c && r);
-    assert(r->reg != REG_NONE);
-    switch (r->length) {
+void print_cpu_flags_state(u16 *flag_reg) {
+    if(get_cf(*flag_reg)) { printf("C"); }
+    if(get_pf(*flag_reg)) { printf("P"); }
+    if(get_af(*flag_reg)) { printf("A"); }
+    if(get_zf(*flag_reg)) { printf("Z"); }
+    if(get_sf(*flag_reg)) { printf("S"); }
+    if(get_of(*flag_reg)) { printf("O"); }
+    if(get_if(*flag_reg)) { printf("I"); }
+    if(get_df(*flag_reg)) { printf("D"); }
+    if(get_tf(*flag_reg)) { printf("T"); }
+}
+
+u32 read_reg(cpu_t *cpu, const reg_t *reg_t) {
+    assert(cpu && reg_t);
+    assert(reg_t->reg != REG_NONE);
+    switch (reg_t->length) {
     case BIT_SIZE_8:
     case BIT_SIZE_16:
         break;
     default:
         assert(0);
     }
-    if (r->length == BIT_SIZE_16) {
-        assert(r->offset == BIT_SIZE_0);
-        return c->regs[r->reg - REG_A];
+    if (reg_t->length == BIT_SIZE_16) {
+        assert(reg_t->offset == BIT_SIZE_0);
+        return cpu->regs[reg_t->reg - REG_A];
     }
-    if (r->length == BIT_SIZE_8) {
-        switch (r->offset) {
+    if (reg_t->length == BIT_SIZE_8) {
+        switch (reg_t->offset) {
         case BIT_SIZE_0:
         case BIT_SIZE_8:
             break;
         default:
             assert(0);
         }
-        return r->offset == BIT_SIZE_0 ?
-            c->regs[r->reg - REG_A] & BIT_MASK_8_LO :
-            (c->regs[r->reg - REG_A] & BIT_MASK_8_HI) >> BYTE_BIT_LENGTH;
+        return reg_t->offset == BIT_SIZE_0 ?
+            cpu->regs[reg_t->reg - REG_A] & BIT_MASK_8_LO :
+            (cpu->regs[reg_t->reg - REG_A] & BIT_MASK_8_HI) >> BYTE_BIT_LENGTH;
     }
     assert(0); // unreachable
 }
 
-void write_reg_val(cpu_t *c, const reg_t *r, u32 v) {
-    assert(c && r);
-    printf("; Before: ");
-    print_reg_state(c, r);
-    printf("\n");
-    switch (r->length) {
+void write_reg_val(cpu_t *cpu, const reg_t *reg_t, u32 val) {
+    assert(cpu && reg_t);
+    printf("; ");
+    print_reg_state(cpu, reg_t);
+    switch (reg_t->length) {
     case BIT_SIZE_8:
-        assert(v <= BIT_MASK_8_LO);
-        switch (r->offset) {
+        assert(val <= BIT_MASK_8_LO);
+        switch (reg_t->offset) {
             case BIT_SIZE_0:
-                c->regs[r->reg - REG_A] &= 0xff00;
-                c->regs[r->reg - REG_A] |= v & 0xff;
+                cpu->regs[reg_t->reg - REG_A] &= 0xff00;
+                cpu->regs[reg_t->reg - REG_A] |= val & 0xff;
                 break;
             case BIT_SIZE_8:
-                c->regs[r->reg - REG_A] &= 0x00ff;
-                c->regs[r->reg - REG_A] |= (v & 0xff) << BYTE_BIT_LENGTH;
+                cpu->regs[reg_t->reg - REG_A] &= 0x00ff;
+                cpu->regs[reg_t->reg - REG_A] |= (val & 0xff) << BYTE_BIT_LENGTH;
                 break;
             default:
                 assert(0);
         }
         break;
     case BIT_SIZE_16:
-        assert(v <= BIT_MASK_16);
-        c->regs[r->reg - REG_A] = v;
+        assert(val <= BIT_MASK_16);
+        cpu->regs[reg_t->reg - REG_A] = val;
         break;
     default:
         assert(0);
     }
-    printf("; After: ");
-    print_reg_state(c, r);
-    printf("\n");
+    printf("->");
+    print_reg_state(cpu, reg_t);
 }
 
-void write_reg_reg(cpu_t *c, const reg_t *dest, const reg_t *src) {
-    assert(c && dest && src);
-    const i32 v = read_reg(c, src);
-    write_reg_val(c, dest, v);
+void write_reg_reg(cpu_t *cpu, const reg_t *dest_reg_t, const reg_t *src_reg_t) {
+    assert(cpu && dest_reg_t && src_reg_t);
+    assert(dest_reg_t->length == src_reg_t->length);
+    const u32 src_val = read_reg(cpu, src_reg_t);
+    write_reg_val(cpu, dest_reg_t, src_val);
 }
 
-i32 binary_add(u16 *f, u32 a, u32 b, const u8 s, const bit_width_e w) {
-    u8 width = 0;
-    u8 a_sign = 0;
-    u8 b_sign = 0;
-    switch (w) {
+// a + b
+u32 binary_add(u16 *flags_reg, u32 a, u32 b, const bit_width_e width_e) {
+    u8 bits_width = 0;
+    u8 a_sign_bit = 0, b_sign_bit = 0;
+    switch (width_e) {
     case BIT_SIZE_0:
         return 0;
     case BIT_SIZE_8:
         assert(a <= 0xff && b <= 0xff);
-        width = 8;
-        a_sign = a >> 7 & 1;
-        b_sign = b >> 7 & 1;
+        bits_width = 8;
+        a_sign_bit = a >> 7 & 1;
+        b_sign_bit = b >> 7 & 1;
         break;
     case BIT_SIZE_16:
         assert(a <= 0xffff && b <= 0xffff);
-        width = 16;
-        a_sign = a >> 15 & 1;
-        b_sign = b >> 15 & 1;
+        bits_width = 16;
+        a_sign_bit = a >> 15 & 1;
+        b_sign_bit = b >> 15 & 1;
         break;
     }
-    u8 carry = 0;
-    u8 a_bit = 0;
-    u8 b_bit = 0;
-    u32 r = 0;
-    for (u8 i = 0; i < width; i++) {
-        a_bit = a & 1; a >>= 1;
-        b_bit = b & 1; b >>= 1;
-        r |= (a_bit ^ b_bit ^ carry) << i;
-        carry = (a_bit & b_bit) | (carry & (a_bit ^ b_bit));
+
+    u8 carry_bit = 0;
+    u8 aux_flag = 0;
+    u8 bit_a = 0, bit_b = 0;
+    u32 sum = 0;
+    for (u8 i = 0; i < bits_width; i++) {
+        if (carry_bit && i == 4) {
+            aux_flag = 1;
+        }
+        bit_a = a & 1; a >>= 1;
+        bit_b = b & 1; b >>= 1;
+        sum |= (bit_a ^ bit_b ^ carry_bit) << i;
+        carry_bit = (bit_a & bit_b) | (carry_bit & (bit_a ^ bit_b));
     }
-    set_cf(*f, carry);
-    set_pf(*f, !(r & 1));
-    // AF
-    set_zf(*f, !r);
-    u8 is_signed = 0;
-    switch (w) {
+
+    u8 sum_sign_bit = 0;
+    switch (width_e) {
     case BIT_SIZE_0:
         break;
     case BIT_SIZE_8:
-        is_signed = r >> 7 & 1;
+        sum_sign_bit = sum >> 7 & 1;
         break;
     case BIT_SIZE_16:
-        is_signed = r >> 15 & 1;
+        sum_sign_bit = sum >> 15 & 1;
         break;
     }
-    set_sf(*f, is_signed);
-    set_of(*f, (!a_sign & !b_sign & is_signed) | (a_sign & b_sign & !is_signed));
-    return r & 0xffff;
+
+    u8 one_counts = 0;
+    for (u8 i = 0; i < 8; i++) {
+        if ((sum >> i) & 1) { one_counts++; }
+    }
+
+    printf("; flags register: ");
+    print_cpu_flags_state(flags_reg);
+    set_cf(*flags_reg, carry_bit);
+    set_pf(*flags_reg, !(one_counts % 2));
+    set_af(*flags_reg, aux_flag);
+    set_zf(*flags_reg, !sum);
+    set_sf(*flags_reg, sum_sign_bit);
+    set_of(*flags_reg, (!a_sign_bit & !b_sign_bit & sum_sign_bit) | 
+            (a_sign_bit & b_sign_bit & !sum_sign_bit));
+
+    printf("->");
+    print_cpu_flags_state(flags_reg);
+    printf("\n");
+    return sum & 0xffff;
 }
 
-i32 binary_sub();
+// b - a
+u32 binary_sub(u16 *flags_reg, u32 a, u32 b, const bit_width_e bit_width_e) {
+    u8 bits_width = 0;
+    u8 a_sign_bit = 0, b_sign_bit = 0;
+    switch (bit_width_e) {
+    case BIT_SIZE_0:
+        return 0;
+    case BIT_SIZE_8:
+        assert(a <= 0xff && b <= 0xff);
+        bits_width = 8;
+        a_sign_bit = a >> 7 & 1;
+        b_sign_bit = b >> 7 & 1;
+        break;
+    case BIT_SIZE_16:
+        assert(a <= 0xffff && b <= 0xffff);
+        bits_width = 16;
+        a_sign_bit = a >> 15 & 1;
+        b_sign_bit = b >> 15 & 1;
+        break;
+    }
+
+    u8 borrow_out = 0;
+    u8 aux_flag = 0;
+    u8 bit_a = 0;
+    u8 bit_b = 0;
+    u32 diff = 0;
+    for (u8 i = 0; i < bits_width; i++) {
+        if (borrow_out && i == 4) { aux_flag = 1; }
+        bit_a = a & 1; a >>= 1;
+        bit_b = b & 1; b >>= 1;
+        diff |= (bit_a ^ bit_b ^ borrow_out) << i;
+        borrow_out = ((!bit_a) & borrow_out) | ((!bit_a) & bit_b) | 
+            (bit_b & borrow_out);
+    }
+
+    u8 diff_sign_bit = 0;
+    switch (bit_width_e) {
+    case BIT_SIZE_0:
+        break;
+    case BIT_SIZE_8:
+        diff_sign_bit = diff >> 7 & 1;
+        break;
+    case BIT_SIZE_16:
+        diff_sign_bit = diff >> 15 & 1;
+        break;
+    }
+
+    u8 one_counts = 0;
+    for (u8 i = 0; i < 8; i++) {
+        if ((diff >> i) & 1) { one_counts++; }
+    }
+
+    printf("; flags: ");
+    print_cpu_flags_state(flags_reg);
+    set_cf(*flags_reg, borrow_out);
+    set_pf(*flags_reg, !(one_counts % 2));
+    set_af(*flags_reg, aux_flag);
+    set_zf(*flags_reg, !diff);
+    set_sf(*flags_reg, diff_sign_bit);
+    set_of(*flags_reg, (b_sign_bit & !a_sign_bit & diff_sign_bit) | 
+            (a_sign_bit & !b_sign_bit & !diff_sign_bit));
+    printf(" -> ");
+    print_cpu_flags_state(flags_reg);
+    printf("\n");
+
+    return diff & 0xffff;
+}
+
+static void imm_reg_mem_ops_assert(instruction_t *i, operand_t *from, operand_t *
+        to) {
+    assert(to->type == OPERAND_REG || to->type == OPERAND_EFF_ADDR_EXPR);
+    assert(from->type == OPERAND_WORD && from->word.type == WORD_TYPE_IMM);
+    if (get_w(i->ctrl_bits)) {
+        if (to->type == OPERAND_REG) {
+            assert(to->reg->length == BIT_SIZE_16);
+        }
+    } else {
+        assert(from->word.width == BIT_SIZE_8);
+        if (to->type == OPERAND_REG) {
+            assert(from->word.width == BIT_SIZE_8 && 
+                    to->reg->reg < REG_BP && to->reg->length == BIT_SIZE_8);
+        }
+    }
+}
+
+static void imm_reg_ops_assert(instruction_t *i, operand_t *from, operand_t 
+        *to) {
+    assert(to->type == OPERAND_REG);
+    assert(from->type == OPERAND_WORD && from->word.type == WORD_TYPE_IMM);
+    if (get_w(i->ctrl_bits)) {
+        assert(to->reg->length == BIT_SIZE_16);
+    } else {
+        assert(from->word.width == BIT_SIZE_8 &&
+               to->reg->reg < REG_BP && to->reg->length == BIT_SIZE_8);
+    }
+}
+
+static void imm_acc_ops_assert(instruction_t *i, operand_t *reg_a_t, 
+        operand_t *imm) {
+    assert(reg_a_t->type == OPERAND_REG && reg_a_t->reg->reg == REG_A);
+    assert(imm->type == OPERAND_WORD && imm->word.type == WORD_TYPE_IMM);
+    if (get_w(i->ctrl_bits)) {
+        assert(reg_a_t->reg->length == BIT_SIZE_16);
+        assert(imm->word.width == BIT_SIZE_16);
+    } else {
+        assert(reg_a_t->reg->length == BIT_SIZE_8);
+        assert(reg_a_t->reg->offset >= BIT_SIZE_0 || reg_a_t->reg->offset <= BIT_SIZE_8);
+        assert(imm->word.width == BIT_SIZE_8);
+    }
+}
+
+static void sim_mov_reg_mem(cpu_t *cpu, instruction_t *i) {
+    operand_t *to = get_d(i->ctrl_bits) ? &i->operands[0] : &i->operands[1];
+    operand_t *from = get_d(i->ctrl_bits) ? &i->operands[1] : &i->operands[0];
+    switch (get_m(i->ctrl_bits)) {
+    case MOD_11:
+        assert(to->type == OPERAND_REG && from->type == OPERAND_REG);
+        write_reg_reg(cpu, to->reg, from->reg);
+        break;
+    case MOD_10:
+        printf("Register move with memory access (16 bits offset) is yet \
+                implemented\n");
+        break;
+    case MOD_01:
+        printf("Register move with memory access (8 bits offset) is yet \
+                implemented\n");
+        break;
+    case MOD_00:
+        printf("Register move with memory access is yet implemented\n");
+        break;
+    }
+}
+
+static void sim_mov_imm_reg_mem(cpu_t *cpu, instruction_t *i) {
+    operand_t *from = &i->operands[0];
+    operand_t *to = &i->operands[1];
+    imm_reg_mem_ops_assert(i, from, to);
+    switch (get_m(i->ctrl_bits)) {
+    case MOD_11:
+        assert(to->type == OPERAND_REG);
+        write_reg_val(cpu, to->reg, from->word.value);
+        break;
+    case MOD_10:
+        printf("Immediate register move with memory access (16 bits \
+            offset) is yet implemented\n");
+        // Add a break here to avoid fall-through if this is intentional
+        break;
+    case MOD_01:
+        printf("Immediate register move with memory access (8 bits \
+            offset) is yet implemented\n");
+        break;
+    case MOD_00:
+        printf("Immediate register move with memory access is yet \
+                implemented\n");
+        break;
+    }
+}
+
+static void sim_mov_imm_reg(cpu_t *cpu, instruction_t *i) {
+    operand_t *from = &i->operands[0];
+    operand_t *to = &i->operands[1];
+    imm_reg_ops_assert(i, from, to);
+    write_reg_val(cpu, to->reg, from->word.value);
+}
+
+static void sim_mov_acc(cpu_t *cpu, instruction_t *i) { }
+
+static void sim_arithmetic_reg_mem(cpu_t *cpu, instruction_t *i, arithmetic 
+        arithmetic_func, i8 write_back) {
+    operand_t *to = get_d(i->ctrl_bits) ? &i->operands[0] : &i->operands[1];
+    operand_t *from = get_d(i->ctrl_bits) ? &i->operands[1] : &i->operands[0];
+    bit_width_e bit_width_e = get_w(i->ctrl_bits) ? BIT_SIZE_16 : BIT_SIZE_8;
+
+    switch (get_m(i->ctrl_bits)) {
+    case MOD_11:
+        assert(to->type == OPERAND_REG && from->type == OPERAND_REG);
+        const u32 from_val = read_reg(cpu, from->reg);
+        const u32 to_val = read_reg(cpu, to->reg);
+        const u32 result = arithmetic_func(&cpu->flags, to_val, from_val, 
+                bit_width_e);
+        if (write_back) {
+            write_reg_val(cpu, to->reg, result);
+        }
+        break;
+    case MOD_10:
+        printf("Register arithmetic ops with memory access (16 bits offset) is yet \
+                implemented\n");
+        break;
+    case MOD_01:
+        printf("Register arithmetic ops with memory access (8 bits offset) is yet \
+                implemented\n");
+        break;
+    case MOD_00:
+        printf("Register arithmetic ops with memory access is yet implemented\n");
+        break;
+    }
+}
+
+static void sim_arithmetic_imm_reg_mem(cpu_t *cpu, instruction_t *i, 
+        arithmetic arithmetic_func, i8 write_back) {
+    operand_t *from = &i->operands[0];
+    operand_t *to = &i->operands[1];
+
+    imm_reg_mem_ops_assert(i, from, to);
+
+    bit_width_e bit_width_e = get_w(i->ctrl_bits) ? BIT_SIZE_16 : 
+        BIT_SIZE_8;
+
+    u32 from_val = from->word.value;
+    if (get_s(i->ctrl_bits) && get_w(i->ctrl_bits) && from_val >> 7 & 1) {
+        from_val |= 0xff00;
+    }
+
+    switch (get_m(i->ctrl_bits)) {
+    case MOD_11:
+        assert(to->type == OPERAND_REG);
+        const u32 to_val = read_reg(cpu, to->reg);
+        const u32 result = arithmetic_func(&cpu->flags, to_val, from_val, 
+                bit_width_e);
+        if (write_back) {
+            write_reg_val(cpu, to->reg, result);
+        }
+        break;
+    case MOD_10:
+        printf("Immediate register move with memory access (16 bits \
+            offset) is yet implemented\n");
+        break;
+    case MOD_01:
+        printf("Immediate register move with memory access (8 bits \
+            offset) is yet implemented\n");
+        break;
+    case MOD_00:
+        printf("Immediate register move with memory access is yet \
+                implemented\n");
+        break;
+    }
+}
+
+static void sim_arithmetic_imm_acc(cpu_t *cpu, instruction_t *i, 
+        arithmetic arithmetic_func, i8 write_back) {
+    operand_t *reg_a_t = &i->operands[0];
+    operand_t *imm = &i->operands[1];
+    const bit_width_e bit_width_e = get_w(i->ctrl_bits) ? BIT_SIZE_16 : BIT_SIZE_8;
+
+    imm_acc_ops_assert(i, reg_a_t, imm);
+
+    const u32 reg_a_val = read_reg(cpu, reg_a_t->reg);
+    const u32 result = arithmetic_func(&cpu->flags, reg_a_val, imm->word.value,
+            bit_width_e);
+    if (write_back) {
+        write_reg_val(cpu, reg_a_t->reg, result);
+    }
+}
 
 i32 simulate(src_instructions_t *src, memory_t *mem) {
     cpu_t cpu = { 0 };
@@ -135,17 +417,13 @@ i32 simulate(src_instructions_t *src, memory_t *mem) {
     for (i32 i = REG_A; i <= REG_DS; i++) { cpu.regs[i - 1] = 0; }
 
     printf("; Execution context:\n");
-    instruction_t i;
-    operand_t from;
-    operand_t to;
-    u32 from_v;
-    u32 to_v;
-    u32 res;
+    instruction_t instruction_t;
     for (u32 c = 0; c < src->count; c++) {
-        i = src->i_arr[c];
-        print_instruction(&i, 0, 1);
+        instruction_t = src->i_arr[c];
+        print_instruction(&instruction_t, 0, 1);
         printf("\n");
-        switch (i.opcode) {
+        cpu.ip += instruction_t.size;
+        switch (instruction_t.opcode) {
         case OP_NONE:
             printf("; Unknown opcode make it to the simulation from decoding \
                     stage\n");
@@ -153,55 +431,46 @@ i32 simulate(src_instructions_t *src, memory_t *mem) {
             break;
         case MOV_REG_MEM_REG:
         case MOV_REG_MEM_SEG:
-            to = get_d(i.ctrl_bits) ? i.operands[0] : i.operands[1];
-            from = get_d(i.ctrl_bits) ? i.operands[1] : i.operands[0];
-            switch (get_m(i.ctrl_bits)) {
-            case MOD_11:
-                assert(to.type == OPERAND_REG && from.type == OPERAND_REG);
-                write_reg_reg(&cpu, to.reg, from.reg);
-                break;
-            default:
-                printf("MOV with other mods is yet implemented.\n");
-            }
+            sim_mov_reg_mem(&cpu, &instruction_t);
             break;
         case MOV_IMM_REG_MEM:
+            sim_mov_imm_reg_mem(&cpu, &instruction_t);
             break;
         case MOV_IMM_REG:
-            from = i.operands[0];
-            to = i.operands[1];
-            assert(to.type == OPERAND_REG);
-            assert(from.type == OPERAND_WORD && from.word.type == WORD_TYPE_IMM);
-            if (get_w(i.ctrl_bits)) {
-                assert(to.reg->length == BIT_SIZE_16 && 
-                       from.word.width == BIT_SIZE_16);
-            } else {
-                assert(from.word.width == BIT_SIZE_8 &&
-                       to.reg->reg < REG_BP && to.reg->length == BIT_SIZE_8);
-            }
-            write_reg_val(&cpu, to.reg, from.word.value);
+            sim_mov_imm_reg(&cpu, &instruction_t);
             break;
         case ADD_REG_MEM_REG:
-            to = get_d(i.ctrl_bits) ? i.operands[0] : i.operands[1];
-            from = get_d(i.ctrl_bits) ? i.operands[1] : i.operands[0];
-            switch (get_m(i.ctrl_bits)) {
-            case MOD_11:
-                from_v = read_reg(&cpu, from.reg);
-                to_v = read_reg(&cpu, to.reg);
-                res = binary_add(&cpu.flags, to_v, from_v, get_s(i.ctrl_bits), 
-                        get_w(i.ctrl_bits) ? BIT_SIZE_16 : BIT_SIZE_8);
-                write_reg_val(&cpu, to.reg, res);
-                break;
-            default:
-                printf("; ADD with other mods is yet implemented\n");
-            }
+            sim_arithmetic_reg_mem(&cpu, &instruction_t, binary_add, 1);
             break;
         case ADD_IMM_REG_MEM:
+            sim_arithmetic_imm_reg_mem(&cpu, &instruction_t, binary_add, 1);
+            break;
+        case ADD_IMM_ACC:
+            sim_arithmetic_imm_acc(&cpu, &instruction_t, binary_add, 1);
+            break;
+        case SUB_REG_MEM_REG:
+            sim_arithmetic_reg_mem(&cpu, &instruction_t, binary_sub, 1);
+            break;
+        case SUB_IMM_REG_MEM:
+            sim_arithmetic_imm_reg_mem(&cpu, &instruction_t, binary_sub, 1);
+            break;
+        case SUB_IMM_ACC:
+            sim_arithmetic_imm_acc(&cpu, &instruction_t, binary_sub, 1);
+            break;
+        case CMP_REG_MEM_REG:
+            sim_arithmetic_reg_mem(&cpu, &instruction_t, binary_sub, 0);
+            break;
+        case CMP_IMM_REG_MEM:
+            sim_arithmetic_imm_reg_mem(&cpu, &instruction_t, binary_sub, 0);
+            break;
+        case CMP_IMM_ACC:
+            sim_arithmetic_imm_acc(&cpu, &instruction_t, binary_sub, 0);
             break;
         default:
             printf("; This operation is not yet implemented yet.\n");
             break;
         }
-        printf("\n");
+        printf("\n\n");
     }
 
     printf("; Final register state:\n");
@@ -210,23 +479,14 @@ i32 simulate(src_instructions_t *src, memory_t *mem) {
     return 0;
 }
 
-static void print_reg_state(cpu_t *c, const reg_t *r) {
-    printf("; register %s state: %d (%#04x)", get_reg_name(r->reg), 
-            c->regs[r->reg - 1], c->regs[r->reg - 1]);
+static void print_reg_state(cpu_t *cpu, const reg_t *reg_t) {
+    printf("%s:%#04x", get_reg_name(reg_t->reg), cpu->regs[reg_t->reg - 1]);
 }
 
-void print_cpu_state(cpu_t *c) {
+void print_cpu_state(cpu_t *cpu) {
     for (u32 i = REG_A; i <= REG_DS; i++) {
-        printf("; register %s state: %d (%#04x)\n", get_reg_name(i), c->regs[i - 1], 
-                c->regs[i - 1]);
+        printf("; reg %s state: %#04x\n", get_reg_name(i), cpu->regs[i - 1]);
     }
-    printf(";cf: %d\n", get_cf(c->flags));
-    printf(";pf: %d\n", get_pf(c->flags));
-    printf(";af: %d\n", get_af(c->flags));
-    printf(";zf: %d\n", get_zf(c->flags));
-    printf(";sf: %d\n", get_sf(c->flags));
-    printf(";of: %d\n", get_of(c->flags));
-    printf(";if: %d\n", get_if(c->flags));
-    printf(";df: %d\n", get_df(c->flags));
-    printf(";tf: %d\n", get_tf(c->flags));
+    printf("; flags: ");
+    print_cpu_flags_state(&cpu->flags);
 }

@@ -78,6 +78,7 @@ typedef struct reg_t {
 } reg_t;
 
 typedef struct word_t {
+    u8          sign;
     u32         value;
     word_type_e type;
     bit_width_e width;
