@@ -4,26 +4,26 @@
 
 #include "instruction.h"
 
-src_instructions_t *init_src_instruction(instruction_t *i, u32 count) {
-    src_instructions_t *src = calloc(1, sizeof ( src_instructions_t ));
-    if (src == NULL) {
+instr_stream_t *init_instr_stream(instr_t *i, u32 count) {
+    instr_stream_t *stream_t = calloc(1, sizeof(instr_stream_t));
+    if (stream_t == NULL) {
         printf("init_src_instruction: calloc error\n");
         return NULL;
     }
-    src->i_arr = realloc(i, count * sizeof( instruction_t ));
-    if (src->i_arr == NULL) {
+    stream_t->stream = realloc(i, count * sizeof(instr_t));
+    if (stream_t->stream == NULL) {
         printf("init_src_instruction: realloc error. Extra memory is being\
                 occupied\n");
         return NULL;
     }
-    src->count = count;
-    return src;
+    stream_t->count = count;
+    return stream_t;
 }
 
-void free_src_instruction(src_instructions_t *src) {
-    assert(src);
-    assert(src->i_arr);
+void free_instr_stream(instr_stream_t *stream_t) {
+    assert(stream_t);
+    assert(stream_t->stream);
 
-    free(src->i_arr);
-    free(src);
+    free(stream_t->stream);
+    free(stream_t);
 }

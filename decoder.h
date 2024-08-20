@@ -4,9 +4,8 @@
 #include "instruction.h"
 #include "memory.h"
 
-
 typedef struct decoder_context_t {
-    u32      *a; // Keep track of where decoder is at in the memory region
+    u32 *a; // Keep track of where decoder is at in the memory region
     memory_t *mem;
 } decoder_context_t;
 
@@ -16,23 +15,24 @@ static i32 decode_word(decoder_context_t *dc, word_t *w);
 
 static i32 decode_imm(const u8 c, decoder_context_t *dc, operand_t *o);
 
-static i32 decode_eff_addr_expr(const u8 c, decoder_context_t *dc, operand_t *o);
+static i32 decode_eff_addr_expr(const u8 c, decoder_context_t *dc,
+                                operand_t *o);
 
 static i32 decode_mod_rsm(const u8 c, decoder_context_t *dc, operand_t *o);
 
-static i32 decode_mod_reg_rsm(decoder_context_t *dc, instruction_t *i);
+static i32 decode_mod_reg_rsm(decoder_context_t *dc, instr_t *instr_t);
 
-static i32 decode_imm_mod_reg_mem(decoder_context_t *dc, instruction_t *i);
+static i32 decode_imm_mod_reg_mem(decoder_context_t *dc, instr_t *instr_t);
 
-static i32 decode_imm_reg(decoder_context_t *dc, instruction_t *i);
+static i32 decode_imm_reg(decoder_context_t *dc, instr_t *instr_t);
 
-static i32 decode_acc_mem(decoder_context_t *dc, instruction_t *i);
+static i32 decode_acc_mem(decoder_context_t *dc, instr_t *instr_t);
 
-static i32 decode_acc_imm(decoder_context_t *dc, instruction_t *i);
+static i32 decode_acc_imm(decoder_context_t *dc, instr_t *instr_t);
 
-static i32 label_jmp(u32 jmp, instruction_t *i_arr, const u32 size);
+static i32 label_jmp(u32 jmp, instr_t *i_arr, const u32 size);
 
-src_instructions_t *load_instruction(memory_t *mem_t);
+instr_stream_t *load_instr_stream(memory_t *mem_t);
 
 static i32 print_word(word_t *w);
 
@@ -42,9 +42,8 @@ static i32 print_reg(const reg_t *r);
 
 static i32 print_operand(operand_t *o);
 
-static void print_jmp(instruction_t *in);
+static void print_jmp(instr_t *in);
 
-void print_instruction(instruction_t *in, u8 show_base_addr, u8 as_comment);
-
+void print_instr(instr_t *instr_t, u8 show_base_addr, u8 as_comment);
 
 #endif

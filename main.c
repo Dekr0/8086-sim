@@ -4,11 +4,13 @@
 #include <string.h>
 
 #include "decoder.h"
+#include "instruction.h"
 #include "sim.h"
 
-
 int main(int argc, char **argv) {
-    if (argc < 2) { return 1; }
+    if (argc < 2) {
+        return 1;
+    }
 
     u8 exec = 0;
     if (argc == 3) {
@@ -16,29 +18,35 @@ int main(int argc, char **argv) {
     }
 
     memory_t *mem = init_memory_t();
-    if (mem == NULL) { return 1; }
-
-    int fd = open(argv[argc - 1], O_RDONLY);
-    if (fd == -1) { perror("open"); }
-
-    if (load_memory(fd, mem) == -1) { return 1; }
-
-    src_instructions_t *src = load_instruction(mem);
-    if (src == NULL) { 
-        free_memory(mem);
-        return 1; 
+    if (mem == NULL) {
+        return 1;
     }
 
-    for (u32 i = 0; i < src->count; i++) {
-        print_instruction(src->i_arr + i, 1, 0);
+    int fd = open(argv[argc - 1], O_RDONLY);
+    if (fd == -1) {
+        perror("open");
+    }
+
+    if (load_memory(fd, mem) == -1) {
+        return 1;
+    }
+
+    instr_stream_t *stream_t = load_instr_stream(mem);
+    if (stream_t == NULL) {
+        free_memory(mem);
+        return 1;
+    }
+
+    for (u32 i = 0; i < stream_t->count; i++) {
+        print_instr(stream_t->stream + i, 1, 0);
         printf("\n");
     }
     printf("\n");
 
     if (exec) {
-        simulate(src, mem);
+        simulate(stream_t, mem);
     }
 
-    free_src_instruction(src);
+    free_instr_stream(stream_t);
     free_memory(mem);
 }

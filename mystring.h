@@ -5,11 +5,11 @@
 
 #include "type.h"
 
-#define CAPC 2048 
+#define CAPC 2048
 
 typedef struct str_builder_t {
-    u32  size;
-    u32  capc;
+    u32 size;
+    u32 capc;
     char str[CAPC];
 } str_builder_t;
 

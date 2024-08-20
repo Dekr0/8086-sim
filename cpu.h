@@ -1,7 +1,6 @@
 #ifndef CPU_SIM_8086_H
 #define CPU_SIM_8086_H
 
-
 #include "instruction.h"
 
 #define set_cf(flag_reg, v) flag_reg = (flag_reg & 0b111111110) | (v)
@@ -25,10 +24,9 @@
 #define get_tf(flag_reg) (flag_reg >> 8) & 1
 
 typedef struct cpu_t {
-    u16 ip;
+    i32 ip;
     u16 flags;
     u16 regs[REG_DS];
 } cpu_t;
-
 
 #endif

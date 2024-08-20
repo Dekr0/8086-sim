@@ -3,7 +3,6 @@
 
 #include "instruction.h"
 
-
 const char *get_reg_name(u8 i);
 
 const char *get_cond_jmp(u8 i);

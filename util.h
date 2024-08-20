@@ -3,8 +3,6 @@
 
 #include "type.h"
 
-
 void print_binary(i32 n, u32 bit_size);
-
 
 #endif
