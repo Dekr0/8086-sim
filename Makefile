@@ -3,18 +3,18 @@ CFLAGS := -g
 
 SRC_DIR := . 
 ASM_DIR := ./source
-BIN_DIR := ./assmeble
+BIN_DIR := ./assemble
 DSM_DIR := ./disassemble
-RSM_DIR := ./reassmeble
+RSM_DIR := ./reassemble
 
 SRCS := $(shell find $(SRC_DIR) -name '*.c' ! -name "mystring.*" ! -name "unit_test.*")
 ASMS := $(shell find $(ASM_DIR) -name '*.asm' ! -name "test_break.asm")
 
-UNIT_TEST_TARGET := m
+UNIT_TEST_TARGET := a
 UNIT_TEST_FILE := $(BIN_DIR)/test_$(UNIT_TEST_TARGET)
 UNIT_TEST_DSM_OUTPUT := $(DSM_DIR)/test_$(UNIT_TEST_TARGET).asm
 UNIT_TEST_BIN_OUTPUT := $(RSM_DIR)/test_$(UNIT_TEST_TARGET)
-UNIT_TEST_FLAG :=--exec
+UNIT_TEST_FLAG :=
 
 # append .o suffix
 OBJS := $(SRCS:%=%.o)
@@ -40,14 +40,14 @@ unit_test:
 	diff $(UNIT_TEST_FILE) $(UNIT_TEST_BIN_OUTPUT)
 
 format:
-	clang-format -Werror --style=LLVM
+	clang-format -Werror --style="{BasedOnStyle: llvm, IndentWidth: 4}" -i *.c *.h
 
 clean:
 	rm *.o
 clean-assemble:
-	rm ./assmeble/*
+	rm ./assemble/*
 clean-disassemble:
 	rm ./disassemble/*
 clean-reassemble:
-	rm ./reassmeble/*
+	rm ./reassemble/*
 
