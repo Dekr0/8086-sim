@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "decoder.h"
-#include "instruction.h"
+#include "print.h"
 #include "sim.h"
 
 int main(int argc, char **argv) {
@@ -12,39 +13,72 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    u8 argp = 1;
     u8 exec = 0;
-    if (argc == 3) {
-        exec = !strcmp(argv[1], "--exec");
+    u8 interactive = 0;
+    i8 rf = -1;
+    FILE *wf = NULL;
+    while (argp < argc) {
+        if (argv[argp][0] != '-')
+            break;
+        if (!strcmp(argv[argp], "-e")) {
+            exec = 1;
+        } else if (!strcmp(argv[argp], "-i")) {
+            interactive = 1;
+        } else if (!strcmp(argv[argp], "-stdout")) {
+            wf = stdout;
+        } else {
+            printf("%s is not valid option\n", argv[argp]);
+            return EXIT_FAILURE;
+        }
+        argp++;
+    }
+    if (argp >= argc) {
+        printf("Missing binary assembly input file\n");
+        return EXIT_FAILURE;
+    }
+    if (wf != stdout && argp + 1 >= argc) {
+        printf("Missing disassemble destination. Specify -stdout to output to "
+               "stdout\n");
+        return EXIT_FAILURE;
+    }
+    rf = open(argv[argp++], O_RDONLY);
+    if (rf == -1) {
+        perror("fopen");
+        return EXIT_FAILURE;
+    }
+    if (wf != stdout) {
+        wf = fopen(argv[argp], "w");
+        if (wf == NULL) {
+            perror("fopen");
+            return EXIT_FAILURE;
+        }
     }
 
     memory_t *mem = init_memory_t();
     if (mem == NULL) {
-        return 1;
+        return EXIT_FAILURE;
     }
 
-    int fd = open(argv[argc - 1], O_RDONLY);
-    if (fd == -1) {
-        perror("open");
+    if (load_memory(rf, mem) == -1) {
+        return EXIT_FAILURE;
     }
 
-    if (load_memory(fd, mem) == -1) {
-        return 1;
-    }
-
-    instr_stream_t *stream_t = load_instr_stream(mem);
+    instr_stream_t *stream_t = load_instr_stream(mem, wf);
     if (stream_t == NULL) {
         free_memory(mem);
-        return 1;
+        return EXIT_FAILURE;
     }
 
+    fprintf(wf, "bits 16\n");
     for (u32 i = 0; i < stream_t->count; i++) {
-        print_instr(stream_t->stream + i, 1, 0);
-        printf("\n");
+        print_instr(stream_t->stream + i, 1, 0, wf);
+        fprintf(wf, "\n");
     }
-    printf("\n");
+    fprintf(wf, "\n");
 
     if (exec) {
-        simulate(stream_t, mem);
+        simulate(stream_t, mem, interactive, wf);
     }
 
     free_instr_stream(stream_t);
