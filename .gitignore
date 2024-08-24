@@ -3,3 +3,4 @@ disassemble/**
 reassemble/**
 main
 unit_test
+*.data
