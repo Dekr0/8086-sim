@@ -7,9 +7,9 @@ the 8086 CPU.
     (There are a few remarks)
     - simulates instructions execution and side effects on the virtual 8086 CPU 
     and virtual 8086 memory
-    - More to comes in future ??? (Visualization)
+    - TUI based simulation
 
-## State of This Projects
+## State of This Project
 
 - The accuracy of this emulator is not guaranteed since the amount of instructions 
 are already quiet large despite 8086 is very simple and small instructions set 
@@ -22,6 +22,11 @@ some specific fields are set.
 to see what instructions can be simulated.
 - The emulator does not behaves exactly like a physical CPU in terms of decoding 
 and executing instructions. Read [here](url)
+- The source code for TUI was badly written. I implemented it as I learn about 
+how to make TUI application with ANSI escape sequence. 
+    - It definitely needs to be rewrote in a more declare manner with a set of 
+    pre-defined render procedures, or common TUI libraries like `ncursor`, 
+    `Notcurses`, or `bubbletea`.
 
 ## Usage
 
@@ -35,10 +40,18 @@ and executing instructions. Read [here](url)
 
 ### Execution
 
-- Run `./main [binary_assembly_file]` to output the dissembled assembly code.
+- Run `./main [binary_assembly_file] [output_disassembly_file]` to output the 
+dissembled assembly code to `[output_disassembly_file]`
 - Here's a list of flags that are available
-    - `--exec`: perform instructions simulation upon dissembling, and output 
+    - `-e`: perform instructions simulation upon dissembling, and output 
     side effect of each instruction as well as the final result
+    - `-i`: run the emulator in the interactive mode
+        - `-stdout` need to be disabled
+    - `-stdout`: display all the results in the `stdout`
+    - `-mdump [memory_dump_file]`: dump 1MB virtual memory of 8086 into 
+    `[memory_dump_file]`
+        - `[memory_dump_file]` must follow right flag `[-mdump`]`
+
 
 ## Remark
 
@@ -48,6 +61,10 @@ binary assembly code such as jump labels, negative values in the operand.
 meaning of jump labels and negative values in the operand. 
 - The 8086 CPU simply view them as a series of binary number. Thus, the 
 reassemble binary assembly code will be identical to the original one.
+- The interactive mode is untested, and the TUI is made in a rush (TUI are drawn 
+in a very imperative way - manually manipulating the cursor and write output via 
+ANSI escape sequence). There will be a high chance that running interactive 
+mode will result crashes.
 
 ## Design
 
@@ -60,4 +77,4 @@ boundary)
 3. Start decoding process from address 0 in the 8086 memory as the process walk 
 through the 8086 memory until reaching the source boundary.
 4. Store each decoded instruction into a vector
-
+5. Iterate each instruction and write the result to the provided file stream.

@@ -90,6 +90,7 @@ void draw_reg(cpu_t *cpu) {
         printf("  %s   %.2x  %.2x ", get_reg_name(REG_A + i),
                (u8)(cpu->regs[i] >> 8), (u8)(cpu->regs[i]));
         reset_color_mode();
+        printf("  ");
 
         set_scheme(FG, FIELD_BG);
         printf(" %-6s%.4x ", get_reg_name(REG_A + 4 + i), cpu->regs[i + 4]);
