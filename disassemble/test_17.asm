@@ -4,17 +4,15 @@ mov BP,256
 ; address = ??? + 0x3, instruction width = 3 ;
 mov DX,64
 ; address = ??? + 0x6, instruction width = 3 ;
-jmp_addr6:
-mov CX,64
+jmp_addr6: mov CX,64
 ; address = ??? + 0x9, instruction width = 3 ;
-jmp_addr9:
-mov [BP+ 0],Cl
+jmp_addr9: mov [BP+0],Cl
 ; address = ??? + 0xc, instruction width = 4 ;
-mov byte [BP+ 1],0
+mov byte [BP+1],0
 ; address = ??? + 0x10, instruction width = 3 ;
-mov [BP+ 2],Dl
+mov [BP+2],Dl
 ; address = ??? + 0x13, instruction width = 4 ;
-mov byte [BP+ 3],-1
+mov byte [BP+3],-1
 ; address = ??? + 0x17, instruction width = 3 ;
 add BP,4
 ; address = ??? + 0x1a, instruction width = 2 ;
@@ -30,14 +28,13 @@ mov BX,BP
 ; address = ??? + 0x26, instruction width = 3 ;
 mov CX,62
 ; address = ??? + 0x29, instruction width = 4 ;
-jmp_addr41:
-mov byte [BP+ 1],-1
+jmp_addr41: mov byte [BP+1],-1
 ; address = ??? + 0x2d, instruction width = 5 ;
-mov byte [BP+ 15617],-1
+mov byte [BP+15617],-1
 ; address = ??? + 0x32, instruction width = 4 ;
-mov byte [BX+ 1],-1
+mov byte [BX+1],-1
 ; address = ??? + 0x36, instruction width = 5 ;
-mov byte [BX+ 245],-1
+mov byte [BX+245],-1
 ; address = ??? + 0x3b, instruction width = 3 ;
 add BP,4
 ; address = ??? + 0x3e, instruction width = 4 ;

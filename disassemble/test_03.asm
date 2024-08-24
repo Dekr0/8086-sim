@@ -8,7 +8,7 @@ mov DX,[BX-32]
 ; address = ??? + 0xa, instruction width = 3 ;
 mov byte [BP+DI],7
 ; address = ??? + 0xd, instruction width = 6 ;
-mov word [DI+ 901],347
+mov word [DI+901],347
 ; address = ??? + 0x13, instruction width = 4 ;
 mov BP,[5]
 ; address = ??? + 0x17, instruction width = 4 ;
