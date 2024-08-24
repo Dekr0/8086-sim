@@ -34,6 +34,6 @@ static i32 decode_acc_imm(decoder_context_t *dc, instr_t *instr_t);
 
 static i32 label_jmp(u32 jmp, instr_t *i_arr, const u32 size);
 
-instr_stream_t *load_instr_stream(memory_t *mem_t, FILE *wf);
+instr_stream_t *load_instr_stream(memory_t *mem_t);
 
 #endif

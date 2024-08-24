@@ -3,6 +3,7 @@
 
 #include "decoder.h"
 #include "instruction.h"
+#include "print.h"
 #include "table.h"
 #include "type.h"
 
@@ -71,7 +72,8 @@ static i32 decode_word(decoder_context_t *dc, word_t *w) {
     switch (w->width) {
     case BIT_SIZE_16:
         if (*a + 1 > dc->mem->source_end) {
-            printf("decode_word: decoder is out of source code bound\n");
+            xfprintf(stderr,
+                     "decode_word: decoder is out of source code bound\n");
             return -1;
         }
         w->value = unpack_b16_to_int(mem[*a], mem[*a + 1]);
@@ -82,7 +84,8 @@ static i32 decode_word(decoder_context_t *dc, word_t *w) {
         break;
     case BIT_SIZE_8:
         if (*a > dc->mem->source_end) {
-            printf("decode_word: decoder is out of source code bound\n");
+            xfprintf(stderr,
+                     "decode_word: decoder is out of source code bound\n");
             return -1;
         }
         w->value = (u8)mem[*a];
@@ -125,7 +128,8 @@ static i32 decode_eff_addr_expr(const u8 c, decoder_context_t *dc,
     *a += 2;
     switch (m) {
     case MOD_11:
-        printf("decode_eff_add_expr: mod = 11 in effective address expression\
+        xfprintf(stderr,
+                 "decode_eff_add_expr: mod = 11 in effective address expression\
                 decoding?\n");
         return -1;
     case MOD_10:
@@ -239,7 +243,7 @@ static i32 label_jmp(u32 jmp, instr_t *instr_stream, const u32 size) {
     return 1;
 }
 
-instr_stream_t *load_instr_stream(memory_t *mem_t, FILE *wf) {
+instr_stream_t *load_instr_stream(memory_t *mem_t) {
     u8 b1 = 0;
     u8 b2 = 0;
     u8 abort = 0;
@@ -268,7 +272,7 @@ instr_stream_t *load_instr_stream(memory_t *mem_t, FILE *wf) {
         instr->raw_ctrl_bits2 = mem[a + 1];
         if ((opcode = decode_opcode(mem[a], mem[a + 1])) == OP_NONE) {
             fprintf(stderr, "Opcode is unknown for byte at address %d\n", a);
-            printf("Abort instruction decoding\n");
+            fprintf(stderr, "Abort instruction decoding\n");
             goto Abort;
         }
         instr->opcode = opcode;
@@ -422,8 +426,8 @@ instr_stream_t *load_instr_stream(memory_t *mem_t, FILE *wf) {
         assert(j);
         const i32 jmp = j->operands[0].word.value + j->base_addr + j->size;
         if (label_jmp(jmp, instr_stream, ni)) {
-            fprintf(stderr,
-                    "instruction with address ??? + %d does not exist\n", jmp);
+            xfprintf(stderr,
+                     "instruction with address ??? + %d does not exist\n", jmp);
             goto Abort;
         }
     }

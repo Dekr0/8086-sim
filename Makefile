@@ -7,15 +7,13 @@ BIN_DIR := ./assemble
 DASM_DIR := ./disassemble
 RBIN_DIR := ./reassemble
 
-SRCS := $(shell find $(SRC_DIR) -name '*.c' \
-		! -name "tui.*" \
-		)
+SRCS := $(shell find $(SRC_DIR) -name '*.c')
 ASMS := $(shell find $(ASM_DIR) -name '*.asm' \
 		! -name "test_05.asm" \
 		! -name "test_E*" \
 		)
 
-UNIT_TEST_TARGET := 15
+UNIT_TEST_TARGET := 16
 UNIT_TEST_FILE := $(BIN_DIR)/test_$(UNIT_TEST_TARGET)
 UNIT_TEST_DSM_OUTPUT := $(DASM_DIR)/test_$(UNIT_TEST_TARGET).asm
 UNIT_TEST_BIN_OUTPUT := $(RBIN_DIR)/test_$(UNIT_TEST_TARGET)
@@ -54,7 +52,7 @@ $(BINS): $(BIN_DIR)/% : $(ASM_DIR)/%.asm
 	nasm $< -o $@
 
 $(DASMS): $(DASM_DIR)/%.asm : $(BIN_DIR)/%
-	./main -stdout $(UNIT_TEST_FLAG) $< > $@
+	./main $(UNIT_TEST_FLAG) $< > $@
 
 $(RBINS): $(RBIN_DIR)/%: $(DASM_DIR)/%.asm
 	nasm $< -o $@

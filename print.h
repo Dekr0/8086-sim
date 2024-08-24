@@ -6,38 +6,43 @@
 #include "cpu.h"
 #include "instruction.h"
 
-#define watch_cpu_ip(cpu, f, wf)                                               \
-    fprintf(wf, "IP:%#04x->", cpu->ip);                                        \
-    f;                                                                         \
-    fprintf(wf, "%#04x", cpu->ip);                                             \
-    fprintf(wf, ",");
+#define xfprintf(f, ...)                                                       \
+    if (f != NULL) {                                                           \
+        fprintf(f, __VA_ARGS__);                                               \
+    }
 
-#define watch_reg_state(reg, cpu, f, wf)                                       \
+#define watch_cpu_ip(cpu, effect, wf)                                          \
+    xfprintf(wf, "IP:%#04x->", cpu->ip);                                       \
+    effect;                                                                    \
+    xfprintf(wf, "%#04x", cpu->ip);                                            \
+    xfprintf(wf, ",");
+
+#define watch_reg_state(reg, cpu, effect, wf)                                  \
     print_cpu_reg(cpu, reg, wf);                                               \
-    f;                                                                         \
-    fprintf(wf, "->");                                                         \
+    effect;                                                                    \
+    xfprintf(wf, "->");                                                        \
     print_cpu_reg(cpu, reg, wf);                                               \
-    fprintf(wf, ",");
+    xfprintf(wf, ",");
 
-#define watch_cpu_flags(flags, f, wf)                                          \
-    fprintf(wf, "flags:");                                                     \
+#define watch_cpu_flags(flags, effect, wf)                                     \
+    xfprintf(wf, "flags:");                                                    \
     print_cpu_flags(flags, wf);                                                \
-    f;                                                                         \
-    fprintf(wf, "->");                                                         \
+    effect;                                                                    \
+    xfprintf(wf, "->");                                                        \
     print_cpu_flags(flags, wf);                                                \
-    fprintf(wf, ",");
+    xfprintf(wf, ",");
 
-i32 print_word(word_t *w, FILE *wf);
+u32 print_word(word_t *w, FILE *wf);
 
-i32 print_eff_addr_expr(eff_addr_expr_t *e, FILE *wf);
+u32 print_eff_addr_expr(eff_addr_expr_t *e, FILE *wf);
 
-i32 print_reg(const reg_t *r, FILE *wf);
+u32 print_reg(const reg_t *r, FILE *wf);
 
-i32 print_operand(operand_t *o, FILE *wf);
+u32 print_operand(operand_t *o, FILE *wf);
 
-void print_jmp_instr(instr_t *in, FILE *wf);
+u32 print_jmp_instr(instr_t *in, FILE *wf);
 
-void print_instr(instr_t *instr_t, u8 show_base_addr, u8 as_comment, FILE *wf);
+u32 print_instr(instr_t *instr_t, u8 show_base_addr, u8 as_comment, FILE *wf);
 
 void print_cpu(cpu_t *cpu, FILE *wf);
 

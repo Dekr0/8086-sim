@@ -6,9 +6,12 @@ const char cond_jmp[16][5] = {
 
 const char loop_jmp[4][7] = {"loopnz\0", "loopz\0", "loop\0", "jcxz\0"};
 
-const char reg_name[13][3] = {"\0",   "a\0",  "c\0",  "d\0",  "b\0",
-                              "sp\0", "bp\0", "si\0", "di\0", "es\0",
-                              "cs\0", "ss\0", "ds\0"};
+const char reg_name[13][3] = {"\0",   "A\0",  "C\0",  "D\0",  "B\0",
+                              "SP\0", "BP\0", "SI\0", "DI\0", "ES\0",
+                              "CS\0", "SS\0", "DS\0"};
+
+const char flag_names[9][3] = {"CF\0", "PF\0", "AF\0", "ZF\0", "SF\0",
+                               "OF\0", "IF\0", "DF\0", "TF\0"};
 
 const reg_t eff_addr_exprs[8][2] = {
     {{REG_B, BIT_SIZE_0, BIT_SIZE_16}, {REG_SI, BIT_SIZE_0, BIT_SIZE_16}},
@@ -43,6 +46,8 @@ const char *get_reg_name(u8 i) { return reg_name[i]; }
 const char *get_cond_jmp(u8 i) { return cond_jmp[i]; }
 
 const char *get_loop_jmp(u8 i) { return loop_jmp[i]; }
+
+const char *get_flags_names(u8 i) { return flag_names[i]; }
 
 const reg_t *get_regs(u8 i, u8 w) { return &regs[i][w]; }
 

@@ -1,31 +1,63 @@
 #include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "cpu.h"
-#include "instruction.h"
-#include "memory.h"
 #include "print.h"
 #include "sim.h"
+#include "tui.h"
 
-i32 simulate(instr_stream_t *stream_t, memory_t *mem, u8 interactive,
-             FILE *wf) {
+
+i32 simulate(instr_stream_t *stream_t, memory_t *mem, u8 interact, FILE *f) {
     cpu_t cpu = {0};
     i32 stream_cursor = 0;
     for (i32 i = REG_A; i <= REG_DS; i++) {
         cpu.regs[i - 1] = 0;
     }
 
-    sim_ctx_t ctx = {&cpu, mem, stream_t, NULL, &stream_cursor, wf};
+    char cmd[64] = { 0 };
 
-    fprintf(wf, "; Execution context:\n");
+    sim_ctx_t ctx = {&cpu, mem, stream_t, NULL, &stream_cursor, f};
+
+    xfprintf(f, "; Execution context:\n");
     for (; stream_cursor < stream_t->count;) {
         ctx.curr_instr = &stream_t->stream[stream_cursor];
-        print_instr(ctx.curr_instr, 0, 1, wf);
-        fprintf(wf, " ; ");
-        watch_cpu_ip((&cpu), cpu.ip += ctx.curr_instr->size, wf);
+        print_instr(ctx.curr_instr, 0, 1, f);
+
+        if (interact) {
+            clear_screen();
+            hide_cursor();
+            draw_tui(&ctx);
+            show_cursor();
+            printf("current instruction: \n");
+            print_instr(ctx.curr_instr, 0, 0, stdout);
+            printf("\n(debugger) ");
+            fflush(stdout);
+            while (fgets(cmd, 64, stdin) != NULL) {
+                if (!strcmp(cmd, "exit\n") || !strcmp(cmd, "q\n")) {
+                    return EXIT_SUCCESS;
+                }
+                if (cmd[0] == '\n' || !strcmp(cmd, "n\n")) {
+                    break;
+                }
+                fprintf(stderr, "Invalid command\n");
+                printf("(debugger) ");
+                fflush(stdout);
+            }
+            if (feof(stdin)) {
+                break;
+            } else if (ferror(stdin)) {
+                fprintf(stderr, "fgets %d", ferror(stdin));
+                return EXIT_FAILURE;
+            }
+        }
+
+        xfprintf(f, " ; ");
+        watch_cpu_ip((&cpu), cpu.ip += ctx.curr_instr->size, f);
 
         switch (ctx.curr_instr->opcode) {
         case OP_NONE:
-            fprintf(stderr, "; Unknown opcode in simulation\n");
+            xfprintf(stderr, "; Unknown opcode in simulation\n");
             return 1;
         case MOV_REG_MEM_REG:
         case MOV_REG_MEM_SEG:
@@ -82,16 +114,15 @@ i32 simulate(instr_stream_t *stream_t, memory_t *mem, u8 interactive,
         case LOOP_JMP:
             break;
         default:
-            printf("; This operation is not yet implemented yet.\n");
+            xfprintf(stderr, "; This operation is not yet implemented yet.\n");
             break;
         }
-        fprintf(wf, "\n");
+        xfprintf(f, "\n");
     }
 
-    fprintf(wf, "\n; Final register state:\n");
-    print_cpu(&cpu, wf);
+    print_cpu(&cpu, f);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 static void imm_reg_mem_ops_assert(instr_t *i, operand_t *from, operand_t *to) {

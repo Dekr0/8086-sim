@@ -1,110 +1,126 @@
 #include <assert.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 #include "print.h"
 #include "table.h"
 
-i32 print_word(word_t *w, FILE *wf) {
-    i32 nwrite = 0;
+u32 print_word(word_t *w, FILE *f) {
+    if (f == NULL) {
+        return 0;
+    }
+    u32 nprint = 0;
     switch (w->type) {
     case WORD_TYPE_NONE:
         break;
     case WORD_TYPE_ADDR:
-        nwrite += fprintf(wf, "[%d]", w->value);
+        nprint += fprintf(f, "[%d]", w->value);
         break;
     case WORD_TYPE_DISP:
         if (w->sign) {
             switch (w->width) {
             case BIT_SIZE_8:
                 if ((i8)w->value > 0) {
-                    nwrite += fprintf(wf, "+ %d", (i8)w->value);
+                    nprint += fprintf(f, "+%d", (i8)w->value);
                 } else {
-                    nwrite += fprintf(wf, "%d", (i8)w->value);
+                    nprint += fprintf(f, "%d", (i8)w->value);
                 }
                 break;
             case BIT_SIZE_16:
                 if ((i16)w->value > 0) {
-                    nwrite += fprintf(wf, "+ %d", (i16)w->value);
+                    nprint += fprintf(f, "+%d", (i16)w->value);
                 } else {
-                    nwrite += fprintf(wf, "%d", (i16)w->value);
+                    nprint += fprintf(f, "%d", (i16)w->value);
                 }
                 break;
             default:
                 assert(0);
             }
         } else {
-            nwrite += fprintf(wf, "+ %d", w->value);
+            nprint += fprintf(f, "+%d", w->value);
         }
         break;
     case WORD_TYPE_IMM:
         if (w->sign) {
             switch (w->width) {
             case BIT_SIZE_8:
-                nwrite += fprintf(wf, "%d", (i8)w->value);
+                nprint += fprintf(f, "%d", (i8)w->value);
                 break;
             case BIT_SIZE_16:
-                nwrite += fprintf(wf, "%d", (i16)w->value);
+                nprint += fprintf(f, "%d", (i16)w->value);
                 break;
             default:
                 assert(0);
             }
         } else {
-            nwrite += fprintf(wf, "%d", w->value);
+            nprint += fprintf(f, "%d", w->value);
         }
         break;
     }
-    return nwrite;
+    return nprint;
 }
 
-i32 print_eff_addr_expr(eff_addr_expr_t *e, FILE *wf) {
-    i32 nwrite = 0;
-    nwrite += fprintf(wf, "[");
+u32 print_eff_addr_expr(eff_addr_expr_t *e, FILE *f) {
+    if (f == NULL) {
+        return 0;
+    }
+    u32 nprint = fprintf(f, "[");
     if (e->da) {
-        fprintf(wf, "%d", e->disp.value);
-        nwrite += fprintf(wf, "]");
-        return nwrite;
+        nprint += fprintf(f, "%d", e->disp.value);
+        nprint += fprintf(f, "]");
+        return nprint;
     }
-    print_reg(e->terms[0], wf);
+    print_reg(e->terms[0], f);
     if (e->terms[1]->reg != REG_NONE) {
-        nwrite += fprintf(wf, "+");
-        nwrite += print_reg(e->terms[1], wf);
+        nprint += fprintf(f, "+");
+        nprint += print_reg(e->terms[1], f);
     }
-    nwrite += print_word(&e->disp, wf);
-    nwrite += fprintf(wf, "]");
-    return nwrite;
+    nprint += print_word(&e->disp, f);
+    nprint += fprintf(f, "]");
+    return nprint;
 }
 
-i32 print_reg(const reg_t *r, FILE *wf) {
-    i32 nwrite = fprintf(wf, "%s", get_reg_name(r->reg));
+u32 print_reg(const reg_t *r, FILE *f) {
+    if (f == NULL) {
+        return 0;
+    }
+    u32 nprint = fprintf(f, "%s", get_reg_name(r->reg));
     if (r->reg > REG_B) {
-        return nwrite;
+        return nprint;
     }
     if (r->length == BIT_SIZE_8) {
-        nwrite += fprintf(wf, "%s", r->offset ? "h" : "l");
+        nprint += fprintf(f, "%s", r->offset ? "h" : "l");
     } else {
-        nwrite += fprintf(wf, "x");
+        nprint += fprintf(f, "X");
     }
-    return nwrite;
+    return nprint;
 }
 
-i32 print_operand(operand_t *o, FILE *wf) {
-    i32 nwrite = 0;
+u32 print_operand(operand_t *o, FILE *f) {
+    if (f == NULL) {
+        return 0;
+    }
+    u32 nprint = 0;
     switch (o->type) {
     case OPERAND_NONE:
         break;
     case OPERAND_EFF_ADDR_EXPR:
-        nwrite += print_eff_addr_expr(&o->expr, wf);
+        nprint += print_eff_addr_expr(&o->expr, f);
         break;
     case OPERAND_WORD:
-        nwrite += print_word(&o->word, wf);
+        nprint += print_word(&o->word, f);
         break;
     case OPERAND_REG:
-        nwrite += print_reg(o->reg, wf);
+        nprint += print_reg(o->reg, f);
         break;
     }
-    return nwrite;
+    return nprint;
 }
 
-void print_jmp_instr(instr_t *instr_t, FILE *wf) {
+u32 print_jmp_instr(instr_t *instr_t, FILE *f) {
+    if (f == NULL) {
+        return 0;
+    }
     const char *name;
     const i32 jmp =
         instr_t->operands[0].word.value + instr_t->base_addr + instr_t->size;
@@ -118,28 +134,31 @@ void print_jmp_instr(instr_t *instr_t, FILE *wf) {
     default:
         assert(0);
     }
-    fprintf(wf, "%s ", name);
-    fprintf(wf, "jmp_addr%d", jmp);
+    u32 nprintf = fprintf(f, "%s ", name);
+    nprintf += fprintf(f, "jmp_addr%d", jmp);
+
+    return nprintf;
 }
 
-void print_instr(instr_t *instr_t, u8 show_base_addr, u8 as_comment, FILE *wf) {
+u32 print_instr(instr_t *instr_t, u8 show_base_addr, u8 as_comment, FILE *f) {
+    if (f == NULL) {
+        return 0;
+    }
+    u32 nprint = 0;
     if (show_base_addr) {
-        fprintf(wf, "; address = ??? + 0x%x, instruction width = %u ;\n",
+        nprint += fprintf(f, "; address = ??? + 0x%x, instruction width = %u ;\n",
                 instr_t->base_addr, instr_t->size);
     }
-    if (instr_t->is_jmp_dest) {
-        if (as_comment) {
-            fprintf(wf, "; ");
-        }
-        fprintf(wf, "jmp_addr%d:\n", instr_t->base_addr);
-    }
     if (as_comment) {
-        fprintf(wf, "; ");
+        nprint += fprintf(f, "; ");
+    }
+    if (instr_t->is_jmp_dest) {
+        nprint += fprintf(f, "jmp_addr%d: ", instr_t->base_addr);
     }
     const char *name;
     switch (instr_t->opcode) {
     case OP_NONE:
-        return;
+        return 0;
     case MOV_REG_MEM_REG:
     case MOV_IMM_REG_MEM:
     case MOV_IMM_REG:
@@ -164,42 +183,50 @@ void print_instr(instr_t *instr_t, u8 show_base_addr, u8 as_comment, FILE *wf) {
         break;
     case COND_JMP:
     case LOOP_JMP:
-        print_jmp_instr(instr_t, wf);
-        return;
+        nprint += print_jmp_instr(instr_t, f);
+        return nprint;
     }
-    fprintf(wf, "%s ", name);
+    nprint += fprintf(f, "%s ", name);
     switch (instr_t->prefix) {
     case PREFIX_NONE:
         break;
     case PREFIX_EXPLICIT_SIZE:
-        fprintf(wf, "%s ", instr_t->ctrl_bits >> 4 & 1 ? "word" : "byte");
+        nprint += fprintf(f, "%s ", instr_t->ctrl_bits >> 4 & 1 ? "word" : "byte");
         break;
     }
     if (instr_t->operands[1].type == OP_NONE) {
-        print_operand(&instr_t->operands[0], wf);
-        return;
+        nprint += print_operand(&instr_t->operands[0], f);
+        return nprint;
     }
     if (get_d(instr_t->ctrl_bits)) {
-        print_operand(&instr_t->operands[0], wf);
-        fprintf(wf, ",");
-        print_operand(&instr_t->operands[1], wf);
+        nprint += print_operand(&instr_t->operands[0], f);
+        nprint += fprintf(f, ",");
+        nprint += print_operand(&instr_t->operands[1], f);
     } else {
-        print_operand(&instr_t->operands[1], wf);
-        fprintf(wf, ",");
-        print_operand(&instr_t->operands[0], wf);
+        nprint += print_operand(&instr_t->operands[1], f);
+        nprint += fprintf(f, ",");
+        nprint += print_operand(&instr_t->operands[0], f);
     }
+    return nprint;
 }
 
-void print_cpu(cpu_t *cpu, FILE *wf) {
+void print_cpu(cpu_t *cpu, FILE *f) {
+    if (f == NULL) {
+        return;
+    }
+    fprintf(f, "\n; CPU state:\n");
     for (u32 i = REG_A; i <= REG_DS; i++) {
         printf("; %s:%#04x\n", get_reg_name(i), cpu->regs[i - 1]);
     }
-    fprintf(wf, "; IP:%#04x\n", cpu->ip);
-    fprintf(wf, "; flags: ");
-    print_cpu_flags(&cpu->flags, wf);
+    fprintf(f, "; IP:%#04x\n", cpu->ip);
+    fprintf(f, "; flags: ");
+    print_cpu_flags(&cpu->flags, f);
 }
 
-void print_cpu_flags(u16 *flag_reg, FILE *wf) {
+void print_cpu_flags(u16 *flag_reg, FILE *f) {
+    if (f == NULL) {
+        return;
+    }
     if (get_cf(*flag_reg)) {
         printf("C");
     }
@@ -229,7 +256,9 @@ void print_cpu_flags(u16 *flag_reg, FILE *wf) {
     }
 }
 
-void print_cpu_reg(cpu_t *cpu, const reg_t *reg_t, FILE *wf) {
-    fprintf(wf, "%s:%#04x", get_reg_name(reg_t->reg),
-            cpu->regs[reg_t->reg - 1]);
+void print_cpu_reg(cpu_t *cpu, const reg_t *reg_t, FILE *f) {
+    if (f == NULL) {
+        return;
+    }
+    fprintf(f, "%s:%#04x", get_reg_name(reg_t->reg), cpu->regs[reg_t->reg - 1]);
 }
