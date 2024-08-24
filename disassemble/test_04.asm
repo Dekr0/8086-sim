@@ -1,152 +1,152 @@
 bits 16
 ; address = ??? + 0x0, instruction width = 2 ;
-add bx,[bx+si]
+add BX,[BX+SI]
 ; address = ??? + 0x2, instruction width = 3 ;
-add bx,[bp+ 0]
+add BX,[BP+ 0]
 ; address = ??? + 0x5, instruction width = 3 ;
-add ch,2
+add Ch,2
 ; address = ??? + 0x8, instruction width = 3 ;
-add bh,-2
+add Bh,-2
 ; address = ??? + 0xb, instruction width = 3 ;
-add si,2
+add SI,2
 ; address = ??? + 0xe, instruction width = 3 ;
-add bp,2
+add BP,2
 ; address = ??? + 0x11, instruction width = 3 ;
-add cx,8
+add CX,8
 ; address = ??? + 0x14, instruction width = 3 ;
-add bx,[bp+ 0]
+add BX,[BP+ 0]
 ; address = ??? + 0x17, instruction width = 3 ;
-add cx,[bx+ 2]
+add CX,[BX+ 2]
 ; address = ??? + 0x1a, instruction width = 3 ;
-add bh,[bp+si+ 4]
+add Bh,[BP+SI+ 4]
 ; address = ??? + 0x1d, instruction width = 3 ;
-add di,[bp+di+ 6]
+add DI,[BP+DI+ 6]
 ; address = ??? + 0x20, instruction width = 2 ;
-add [bx+si],bx
+add [BX+SI],BX
 ; address = ??? + 0x22, instruction width = 3 ;
-add [bp+ 0],bx
+add [BP+ 0],BX
 ; address = ??? + 0x25, instruction width = 3 ;
-add [bp+ 0],bx
+add [BP+ 0],BX
 ; address = ??? + 0x28, instruction width = 3 ;
-add [bx+ 2],cx
+add [BX+ 2],CX
 ; address = ??? + 0x2b, instruction width = 3 ;
-add [bp+si+ 4],bh
+add [BP+SI+ 4],Bh
 ; address = ??? + 0x2e, instruction width = 3 ;
-add [bp+di+ 6],di
+add [BP+DI+ 6],DI
 ; address = ??? + 0x31, instruction width = 3 ;
-add byte [bx],34
+add byte [BX],34
 ; address = ??? + 0x34, instruction width = 5 ;
-add word [bp+si+ 1000],29
+add word [BP+SI+ 1000],29
 ; address = ??? + 0x39, instruction width = 3 ;
-add ax,[bp+ 0]
+add AX,[BP+ 0]
 ; address = ??? + 0x3c, instruction width = 2 ;
-add al,[bx+si]
+add Al,[BX+SI]
 ; address = ??? + 0x3e, instruction width = 2 ;
-add ax,bx
+add AX,BX
 ; address = ??? + 0x40, instruction width = 2 ;
-add al,ah
+add Al,Ah
 ; address = ??? + 0x42, instruction width = 3 ;
-add ax,1000
+add AX,1000
 ; address = ??? + 0x45, instruction width = 2 ;
-add al,-30
+add Al,-30
 ; address = ??? + 0x47, instruction width = 2 ;
-add al,9
+add Al,9
 ; address = ??? + 0x49, instruction width = 2 ;
-sub bx,[bx+si]
+sub BX,[BX+SI]
 ; address = ??? + 0x4b, instruction width = 3 ;
-sub bx,[bp+ 0]
+sub BX,[BP+ 0]
 ; address = ??? + 0x4e, instruction width = 3 ;
-sub si,2
+sub SI,2
 ; address = ??? + 0x51, instruction width = 3 ;
-sub bp,2
+sub BP,2
 ; address = ??? + 0x54, instruction width = 3 ;
-sub cx,8
+sub CX,8
 ; address = ??? + 0x57, instruction width = 3 ;
-sub bx,[bp+ 0]
+sub BX,[BP+ 0]
 ; address = ??? + 0x5a, instruction width = 3 ;
-sub cx,[bx+ 2]
+sub CX,[BX+ 2]
 ; address = ??? + 0x5d, instruction width = 3 ;
-sub bh,[bp+si+ 4]
+sub Bh,[BP+SI+ 4]
 ; address = ??? + 0x60, instruction width = 3 ;
-sub di,[bp+di+ 6]
+sub DI,[BP+DI+ 6]
 ; address = ??? + 0x63, instruction width = 2 ;
-sub [bx+si],bx
+sub [BX+SI],BX
 ; address = ??? + 0x65, instruction width = 3 ;
-sub [bp+ 0],bx
+sub [BP+ 0],BX
 ; address = ??? + 0x68, instruction width = 3 ;
-sub [bp+ 0],bx
+sub [BP+ 0],BX
 ; address = ??? + 0x6b, instruction width = 3 ;
-sub [bx+ 2],cx
+sub [BX+ 2],CX
 ; address = ??? + 0x6e, instruction width = 3 ;
-sub [bp+si+ 4],bh
+sub [BP+SI+ 4],Bh
 ; address = ??? + 0x71, instruction width = 3 ;
-sub [bp+di+ 6],di
+sub [BP+DI+ 6],DI
 ; address = ??? + 0x74, instruction width = 3 ;
-sub byte [bx],34
+sub byte [BX],34
 ; address = ??? + 0x77, instruction width = 3 ;
-sub word [bx+di],29
+sub word [BX+DI],29
 ; address = ??? + 0x7a, instruction width = 3 ;
-sub ax,[bp+ 0]
+sub AX,[BP+ 0]
 ; address = ??? + 0x7d, instruction width = 2 ;
-sub al,[bx+si]
+sub Al,[BX+SI]
 ; address = ??? + 0x7f, instruction width = 2 ;
-sub ax,bx
+sub AX,BX
 ; address = ??? + 0x81, instruction width = 2 ;
-sub al,ah
+sub Al,Ah
 ; address = ??? + 0x83, instruction width = 3 ;
-sub ax,1000
+sub AX,1000
 ; address = ??? + 0x86, instruction width = 2 ;
-sub al,-30
+sub Al,-30
 ; address = ??? + 0x88, instruction width = 2 ;
-sub al,9
+sub Al,9
 ; address = ??? + 0x8a, instruction width = 2 ;
-cmp bx,[bx+si]
+cmp BX,[BX+SI]
 ; address = ??? + 0x8c, instruction width = 3 ;
-cmp bx,[bp+ 0]
+cmp BX,[BP+ 0]
 ; address = ??? + 0x8f, instruction width = 3 ;
-cmp si,2
+cmp SI,2
 ; address = ??? + 0x92, instruction width = 3 ;
-cmp bp,2
+cmp BP,2
 ; address = ??? + 0x95, instruction width = 3 ;
-cmp cx,8
+cmp CX,8
 ; address = ??? + 0x98, instruction width = 3 ;
-cmp bx,[bp+ 0]
+cmp BX,[BP+ 0]
 ; address = ??? + 0x9b, instruction width = 3 ;
-cmp cx,[bx+ 2]
+cmp CX,[BX+ 2]
 ; address = ??? + 0x9e, instruction width = 3 ;
-cmp bh,[bp+si+ 4]
+cmp Bh,[BP+SI+ 4]
 ; address = ??? + 0xa1, instruction width = 3 ;
-cmp di,[bp+di+ 6]
+cmp DI,[BP+DI+ 6]
 ; address = ??? + 0xa4, instruction width = 2 ;
-cmp [bx+si],bx
+cmp [BX+SI],BX
 ; address = ??? + 0xa6, instruction width = 3 ;
-cmp [bp+ 0],bx
+cmp [BP+ 0],BX
 ; address = ??? + 0xa9, instruction width = 3 ;
-cmp [bp+ 0],bx
+cmp [BP+ 0],BX
 ; address = ??? + 0xac, instruction width = 3 ;
-cmp [bx+ 2],cx
+cmp [BX+ 2],CX
 ; address = ??? + 0xaf, instruction width = 3 ;
-cmp [bp+si+ 4],bh
+cmp [BP+SI+ 4],Bh
 ; address = ??? + 0xb2, instruction width = 3 ;
-cmp [bp+di+ 6],di
+cmp [BP+DI+ 6],DI
 ; address = ??? + 0xb5, instruction width = 3 ;
-cmp byte [bx],34
+cmp byte [BX],34
 ; address = ??? + 0xb8, instruction width = 5 ;
 cmp word [4834],29
 ; address = ??? + 0xbd, instruction width = 3 ;
-cmp ax,[bp+ 0]
+cmp AX,[BP+ 0]
 ; address = ??? + 0xc0, instruction width = 2 ;
-cmp al,[bx+si]
+cmp Al,[BX+SI]
 ; address = ??? + 0xc2, instruction width = 2 ;
-cmp ax,bx
+cmp AX,BX
 ; address = ??? + 0xc4, instruction width = 2 ;
-cmp al,ah
+cmp Al,Ah
 ; address = ??? + 0xc6, instruction width = 3 ;
-cmp ax,1000
+cmp AX,1000
 ; address = ??? + 0xc9, instruction width = 2 ;
-cmp al,-30
+cmp Al,-30
 ; address = ??? + 0xcb, instruction width = 2 ;
-cmp al,9
+cmp Al,9
 ; address = ??? + 0xcd, instruction width = 2 ;
 jmp_addr205:
 jne jmp_addr209

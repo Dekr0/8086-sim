@@ -1,34 +1,34 @@
 bits 16
 ; address = ??? + 0x0, instruction width = 2 ;
-mov si,bx
+mov SI,BX
 ; address = ??? + 0x2, instruction width = 2 ;
-mov dh,al
+mov Dh,Al
 ; address = ??? + 0x4, instruction width = 2 ;
-mov cl,12
+mov Cl,12
 ; address = ??? + 0x6, instruction width = 2 ;
-mov ch,-12
+mov Ch,-12
 ; address = ??? + 0x8, instruction width = 3 ;
-mov cx,12
+mov CX,12
 ; address = ??? + 0xb, instruction width = 3 ;
-mov cx,-12
+mov CX,-12
 ; address = ??? + 0xe, instruction width = 3 ;
-mov dx,3948
+mov DX,3948
 ; address = ??? + 0x11, instruction width = 3 ;
-mov dx,-3948
+mov DX,-3948
 ; address = ??? + 0x14, instruction width = 2 ;
-mov al,[bx+si]
+mov Al,[BX+SI]
 ; address = ??? + 0x16, instruction width = 2 ;
-mov bx,[bp+di]
+mov BX,[BP+DI]
 ; address = ??? + 0x18, instruction width = 3 ;
-mov dx,[bp+ 0]
+mov DX,[BP+ 0]
 ; address = ??? + 0x1b, instruction width = 3 ;
-mov ah,[bx+si+ 4]
+mov Ah,[BX+SI+ 4]
 ; address = ??? + 0x1e, instruction width = 4 ;
-mov al,[bx+si+ 4999]
+mov Al,[BX+SI+ 4999]
 ; address = ??? + 0x22, instruction width = 2 ;
-mov [bx+di],cx
+mov [BX+DI],CX
 ; address = ??? + 0x24, instruction width = 2 ;
-mov [bp+si],cl
+mov [BP+SI],Cl
 ; address = ??? + 0x26, instruction width = 3 ;
-mov [bp+ 0],ch
+mov [BP+ 0],Ch
 
