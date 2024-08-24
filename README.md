@@ -18,10 +18,10 @@ some specific fields are set.
     - Most of the testing are done by compared results from other existing 
     8086 emulators.
 - Not all instructions are able to be recognized, decoded, and simulated. Read 
-[here](url) to see what instructions can be recognized and decoded, and [here](url) 
+[here](https://github.com/Dekr0/8086-sim/blob/bd1bea267dca4d591cdb696e3ccf6d18a913efcc/instruction.h#L28) to see what instructions can be recognized and decoded, and [here](https://github.com/Dekr0/8086-sim/blob/bd1bea267dca4d591cdb696e3ccf6d18a913efcc/sim.c#L63)
 to see what instructions can be simulated.
 - The emulator does not behaves exactly like a physical CPU in terms of decoding 
-and executing instructions. Read [here](url)
+and executing instructions.
 - The source code for TUI was badly written. I implemented it as I learn about 
 how to make TUI application with ANSI escape sequence. 
     - It definitely needs to be rewrote in a more declare manner with a set of 
