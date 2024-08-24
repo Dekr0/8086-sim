@@ -71,7 +71,7 @@ mode will result crashes.
 ### Decoding Flow Control
 
 1. Create 1MB bytes array in the heap to present the 8086 memory.
-2. Load the entire binary assembly file into the 8086 memory, and mark down the 
+2. Load the entire binary assembly file into the 8086 memory, and mark down
 where the source assembly code ends in the 8086 memory (Let's called the source 
 boundary)
 3. Start decoding process from address 0 in the 8086 memory as the process walk 
