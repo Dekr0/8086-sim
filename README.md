@@ -50,7 +50,7 @@ dissembled assembly code to `[output_disassembly_file]`
     - `-stdout`: display all the results in the `stdout`
     - `-mdump [memory_dump_file]`: dump 1MB virtual memory of 8086 into 
     `[memory_dump_file]`
-        - `[memory_dump_file]` must follow right flag `[-mdump`]`
+        - `[memory_dump_file]` must follow right flag `[-mdump]`
 
 
 ## Remark
