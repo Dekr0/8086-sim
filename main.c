@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,9 +6,9 @@
 #include <unistd.h>
 
 #include "decoder.h"
+#include "hashtable.h"
 #include "print.h"
 #include "sim.h"
-#include "tui.h"
 
 typedef struct opts_t {
     u8 argp;
@@ -109,13 +110,6 @@ int main(int argc, char **argv) {
     init_opts(&opts);
     argparse(&opts, argc, argv);
 
-    char *tty_buf = NULL;
-    if (opts.interact) {
-        if (init_tui(&tty_buf, 4096) == EXIT_FAILURE) {
-            return EXIT_FAILURE;
-        }
-    }
-
     memory_t *mem = init_memory_t();
     if (mem == NULL) {
         return EXIT_FAILURE;
@@ -125,22 +119,25 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    instr_stream_t *stream_t = load_instr_stream(mem);
-    if (stream_t == NULL) {
+    hashmap_instr_t *instr_stream = load_instr_stream(mem);
+    if (instr_stream == NULL) {
         free_memory(mem);
         return EXIT_FAILURE;
     }
 
     xfprintf(opts.decode_o, "bits 16\n");
-    for (u32 i = 0; i < stream_t->count; i++) {
-        print_instr(stream_t->stream + i, 1, 0, opts.decode_o);
+    u32 IP = 0;
+    const instr_t *instr = NULL;
+    for (u32 instr_counts = 0; instr_counts < hashmap_instr_size(instr_stream);
+         instr_counts++) {
+        assert((instr = hashmap_instr_get(instr_stream, IP)) != NULL);
+        print_instr(instr, 1, 0, opts.decode_o);
+        IP += instr->size;
         xfprintf(opts.decode_o, "\n");
     }
-    xfprintf(opts.decode_o, "\n");
 
-    if (opts.exec) {
-        simulate(stream_t, mem, opts.interact, opts.decode_o);
-    }
+    if (opts.exec)
+        simulate(instr_stream, mem, opts.interact, opts.decode_o);
 
     if (opts.memory_o != NULL) {
         if (fwrite(mem->mem, sizeof(char), MEM_SIZE_8086, opts.memory_o) <
@@ -157,11 +154,8 @@ int main(int argc, char **argv) {
         fclose(opts.decode_o);
     }
 
-    free_instr_stream(stream_t);
+    free_hashmap_instr(instr_stream);
     free_memory(mem);
-    if (tty_buf) {
-        free(tty_buf);
-    }
 
     return EXIT_SUCCESS;
 }

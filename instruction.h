@@ -3,15 +3,19 @@
 
 #include "type.h"
 
-#define get_d(c) (c >> 7)
-#define get_s(c) (c >> 6 & 1)
-#define get_w(c) (c >> 4 & 1)
-#define get_m(c) (c & 3)
+#define get_d(c) (c >> 6)
+#define get_s(c) (c >> 5 & 1)
+#define get_v(c) (c >> 4 & 1)
+#define get_w(c) (c >> 3 & 1)
+#define get_z(c) (c >> 2 & 1)
+#define get_m(c) (c & 0b11)
 
-#define set_d(c, b) c |= (b) << 7
-#define set_s(c, b) c |= (b) << 6
-#define set_w(c, b) c |= (b) << 4
-#define set_m(c, b) c |= b
+#define set_d(c, b) c |= (b) << 6
+#define set_s(c, b) c |= (b) << 5
+#define set_v(c, b) c |= (b) << 4
+#define set_w(c, b) c |= (b) << 3
+#define set_z(c, b) c |= (b) << 2
+#define set_m(c, b) c |= (b) & 0b11
 
 #define BIT_MASK_8_LO 0x00ff
 #define BIT_MASK_8_HI 0xff00
@@ -26,23 +30,23 @@
 typedef enum mod_e : u8 { MOD_00, MOD_01, MOD_10, MOD_11 } mod_e;
 
 typedef enum opcode_e : u32 {
-    OP_NONE,
-    MOV_REG_MEM_REG,
-    MOV_IMM_REG_MEM,
-    MOV_IMM_REG,
-    MOV_ACC,
-    MOV_REG_MEM_SEG,
-    ADD_REG_MEM_REG,
-    ADD_IMM_REG_MEM,
-    ADD_IMM_ACC,
-    SUB_REG_MEM_REG,
-    SUB_IMM_REG_MEM,
-    SUB_IMM_ACC,
-    CMP_REG_MEM_REG,
-    CMP_IMM_REG_MEM,
-    CMP_IMM_ACC,
-    COND_JMP,
-    LOOP_JMP
+    OPCODE_NONE,
+    OPCODE_MOV_REG_MEM_REG,
+    OPCODE_MOV_IMM_REG_MEM,
+    OPCODE_MOV_IMM_REG,
+    OPCODE_MOV_ACC,
+    OPCODE_MOV_REG_MEM_SEG,
+    OPCODE_ADD_REG_MEM_REG,
+    OPCODE_ADD_IMM_REG_MEM,
+    OPCODE_ADD_IMM_ACC,
+    OPCODE_SUB_REG_MEM_REG,
+    OPCODE_SUB_IMM_REG_MEM,
+    OPCODE_SUB_IMM_ACC,
+    OPCODE_CMP_REG_MEM_REG,
+    OPCODE_CMP_IMM_REG_MEM,
+    OPCODE_CMP_IMM_ACC,
+    OPCODE_COND_JMP,
+    OPCODE_LOOP_JMP
 } opcode_e;
 
 typedef enum cond_jmp_e : u8 {
@@ -125,7 +129,7 @@ typedef struct operand_t {
 } operand_t;
 
 typedef struct {
-    // 0 1 2 3 4 5 6 7
+    // 6 5 4 3 2 1   0
     // d s v w z m o d
     u8 ctrl_bits;
     u8 raw_ctrl_bits1;
@@ -138,13 +142,16 @@ typedef struct {
     operand_t operands[MAX_OPERAND];
 } instr_t;
 
-typedef struct {
-    u32 count;
-    instr_t *stream;
-} instr_stream_t;
+void deep_copy_instr(instr_t *dest, const instr_t *src);
 
-instr_stream_t *init_instr_stream(instr_t *i, u32 count);
+void deep_copy_operand(operand_t *dest, const operand_t *src);
 
-void free_instr_stream(instr_stream_t *src);
+i8 deep_cmp_instr(const instr_t *dest, const instr_t *src);
+
+i8 deep_cmp_operand(const operand_t *dest, const operand_t *src);
+
+void clear_instr(instr_t *i);
+
+void clear_operand(operand_t *o);
 
 #endif

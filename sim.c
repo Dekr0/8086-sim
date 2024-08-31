@@ -5,113 +5,124 @@
 
 #include "print.h"
 #include "sim.h"
-#include "tui.h"
 
+typedef struct sim_ctx_t {
+    cpu_t *cpu;
+    memory_t *mem;
+    hashmap_instr_t *stream;
+    const instr_t *curr_instr;
+    i32 *instr_counts;
+    FILE *wf;
+} sim_ctx_t;
 
-i32 simulate(instr_stream_t *stream_t, memory_t *mem, u8 interact, FILE *f) {
+static void imm_reg_mem_ops_assert(const instr_t *instr_t,
+                                   const operand_t *from, const operand_t *to);
+
+static void imm_reg_ops_assert(const instr_t *instr_t, const operand_t *from,
+                               const operand_t *to);
+
+static void imm_acc_ops_assert(const instr_t *instr_t, const operand_t *reg_a_t,
+                               const operand_t *imm);
+
+static void sim_mov_reg_mem(sim_ctx_t *ctx);
+
+static void sim_mov_imm_reg_mem(sim_ctx_t *ctx);
+
+static void sim_mov_imm_reg(sim_ctx_t *ctx);
+
+static void sim_mov_acc(sim_ctx_t *ctx);
+
+static void sim_arithmetic_reg_mem(sim_ctx_t *ctx, arithmetic arithmetic_func,
+                                   i8 write_back);
+
+static void sim_arithmetic_imm_reg_mem(sim_ctx_t *ctx,
+                                       arithmetic arithmetic_func,
+                                       i8 write_back);
+
+static void sim_arithmetic_imm_acc(sim_ctx_t *ctx, arithmetic arithmetic_func,
+                                   i8 write_back);
+
+static void sim_cond_jmp(sim_ctx_t *ctx);
+
+i32 simulate(hashmap_instr_t *stream, memory_t *mem, u8 interact, FILE *f) {
     cpu_t cpu = {0};
-    i32 stream_cursor = 0;
+    i32 instr_counts = 0;
     for (i32 i = REG_A; i <= REG_DS; i++) {
         cpu.regs[i - 1] = 0;
     }
 
-    char cmd[64] = { 0 };
+    char cmd[64] = {0};
 
-    sim_ctx_t ctx = {&cpu, mem, stream_t, NULL, &stream_cursor, f};
+    sim_ctx_t ctx = {&cpu, mem, stream, NULL, &instr_counts, f};
 
     xfprintf(f, "; Execution context:\n");
-    for (; stream_cursor < stream_t->count;) {
-        ctx.curr_instr = &stream_t->stream[stream_cursor];
+    while (cpu.ip < mem->source_end) {
+        ctx.curr_instr = hashmap_instr_get(stream, cpu.ip);
+        assert(ctx.curr_instr != NULL);
         print_instr(ctx.curr_instr, 0, 1, f);
-
-        if (interact) {
-            clear_screen();
-            hide_cursor();
-            draw_tui(&ctx);
-            show_cursor();
-            printf("current instruction: \n");
-            print_instr(ctx.curr_instr, 0, 0, stdout);
-            printf("\n(debugger) ");
-            fflush(stdout);
-            while (fgets(cmd, 64, stdin) != NULL) {
-                if (!strcmp(cmd, "exit\n") || !strcmp(cmd, "q\n")) {
-                    return EXIT_SUCCESS;
-                }
-                if (cmd[0] == '\n' || !strcmp(cmd, "n\n")) {
-                    break;
-                }
-                fprintf(stderr, "Invalid command\n");
-                printf("(debugger) ");
-                fflush(stdout);
-            }
-            if (feof(stdin)) {
-                break;
-            } else if (ferror(stdin)) {
-                fprintf(stderr, "fgets %d", ferror(stdin));
-                return EXIT_FAILURE;
-            }
-        }
 
         xfprintf(f, " ; ");
         watch_cpu_ip((&cpu), cpu.ip += ctx.curr_instr->size, f);
 
         switch (ctx.curr_instr->opcode) {
-        case OP_NONE:
+        case OPCODE_NONE:
             xfprintf(stderr, "; Unknown opcode in simulation\n");
             return 1;
-        case MOV_REG_MEM_REG:
-        case MOV_REG_MEM_SEG:
+        case OPCODE_MOV_REG_MEM_REG:
+        case OPCODE_MOV_REG_MEM_SEG:
             sim_mov_reg_mem(&ctx);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case MOV_IMM_REG_MEM:
+        case OPCODE_MOV_IMM_REG_MEM:
             sim_mov_imm_reg_mem(&ctx);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case MOV_IMM_REG:
+        case OPCODE_MOV_IMM_REG:
             sim_mov_imm_reg(&ctx);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case ADD_REG_MEM_REG:
+        case OPCODE_ADD_REG_MEM_REG:
             sim_arithmetic_reg_mem(&ctx, binary_add, 1);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case ADD_IMM_REG_MEM:
+        case OPCODE_ADD_IMM_REG_MEM:
             sim_arithmetic_imm_reg_mem(&ctx, binary_add, 1);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case ADD_IMM_ACC:
+        case OPCODE_ADD_IMM_ACC:
             sim_arithmetic_imm_acc(&ctx, binary_add, 1);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case SUB_REG_MEM_REG:
+        case OPCODE_SUB_REG_MEM_REG:
             sim_arithmetic_reg_mem(&ctx, binary_sub, 1);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case SUB_IMM_REG_MEM:
+        case OPCODE_SUB_IMM_REG_MEM:
             sim_arithmetic_imm_reg_mem(&ctx, binary_sub, 1);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case SUB_IMM_ACC:
+        case OPCODE_SUB_IMM_ACC:
             sim_arithmetic_imm_acc(&ctx, binary_sub, 1);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case CMP_REG_MEM_REG:
+        case OPCODE_CMP_REG_MEM_REG:
             sim_arithmetic_reg_mem(&ctx, binary_sub, 0);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case CMP_IMM_REG_MEM:
+        case OPCODE_CMP_IMM_REG_MEM:
             sim_arithmetic_imm_reg_mem(&ctx, binary_sub, 0);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case CMP_IMM_ACC:
+        case OPCODE_CMP_IMM_ACC:
             sim_arithmetic_imm_acc(&ctx, binary_sub, 0);
-            stream_cursor++;
+            instr_counts++;
             break;
-        case COND_JMP:
+        case OPCODE_COND_JMP:
             sim_cond_jmp(&ctx);
+            instr_counts++;
             break;
-        case LOOP_JMP:
+        case OPCODE_LOOP_JMP:
+            instr_counts++;
             break;
         default:
             xfprintf(stderr, "; This operation is not yet implemented yet.\n");
@@ -125,7 +136,8 @@ i32 simulate(instr_stream_t *stream_t, memory_t *mem, u8 interact, FILE *f) {
     return EXIT_SUCCESS;
 }
 
-static void imm_reg_mem_ops_assert(instr_t *i, operand_t *from, operand_t *to) {
+static void imm_reg_mem_ops_assert(const instr_t *i, const operand_t *from,
+                                   const operand_t *to) {
     assert(to->type == OPERAND_REG || to->type == OPERAND_EFF_ADDR_EXPR);
     assert(from->type == OPERAND_WORD && from->word.type == WORD_TYPE_IMM);
     if (get_w(i->ctrl_bits)) {
@@ -141,7 +153,8 @@ static void imm_reg_mem_ops_assert(instr_t *i, operand_t *from, operand_t *to) {
     }
 }
 
-static void imm_reg_ops_assert(instr_t *i, operand_t *from, operand_t *to) {
+static void imm_reg_ops_assert(const instr_t *i, const operand_t *from,
+                               const operand_t *to) {
     assert(to->type == OPERAND_REG);
     assert(from->type == OPERAND_WORD && from->word.type == WORD_TYPE_IMM);
     if (get_w(i->ctrl_bits)) {
@@ -152,7 +165,8 @@ static void imm_reg_ops_assert(instr_t *i, operand_t *from, operand_t *to) {
     }
 }
 
-static void imm_acc_ops_assert(instr_t *i, operand_t *reg_a_t, operand_t *imm) {
+static void imm_acc_ops_assert(const instr_t *i, const operand_t *reg_a_t,
+                               const operand_t *imm) {
     assert(reg_a_t->type == OPERAND_REG && reg_a_t->reg->reg == REG_A);
     assert(imm->type == OPERAND_WORD && imm->word.type == WORD_TYPE_IMM);
     if (get_w(i->ctrl_bits)) {
@@ -168,11 +182,13 @@ static void imm_acc_ops_assert(instr_t *i, operand_t *reg_a_t, operand_t *imm) {
 
 static void sim_mov_reg_mem(sim_ctx_t *ctx) {
     cpu_t *cpu = ctx->cpu;
-    instr_t *i = ctx->curr_instr;
+    const instr_t *i = ctx->curr_instr;
     memory_t *mem = ctx->mem;
 
-    operand_t *to = get_d(i->ctrl_bits) ? &i->operands[0] : &i->operands[1];
-    operand_t *from = get_d(i->ctrl_bits) ? &i->operands[1] : &i->operands[0];
+    const operand_t *to =
+        get_d(i->ctrl_bits) ? &i->operands[0] : &i->operands[1];
+    const operand_t *from =
+        get_d(i->ctrl_bits) ? &i->operands[1] : &i->operands[0];
     const mod_e mod = get_m(i->ctrl_bits);
     if (mod == MOD_11) {
         assert(to->type == OPERAND_REG && from->type == OPERAND_REG);
@@ -199,11 +215,11 @@ static void sim_mov_reg_mem(sim_ctx_t *ctx) {
 
 static void sim_mov_imm_reg_mem(sim_ctx_t *ctx) {
     cpu_t *cpu = ctx->cpu;
-    instr_t *i = ctx->curr_instr;
+    const instr_t *i = ctx->curr_instr;
     memory_t *mem = ctx->mem;
 
-    operand_t *imm = &i->operands[0];
-    operand_t *to = &i->operands[1];
+    const operand_t *imm = &i->operands[0];
+    const operand_t *to = &i->operands[1];
     imm_reg_mem_ops_assert(i, imm, to);
 
     if (get_m(i->ctrl_bits) == MOD_11) {
@@ -226,10 +242,10 @@ static void sim_mov_imm_reg_mem(sim_ctx_t *ctx) {
 
 static void sim_mov_imm_reg(sim_ctx_t *ctx) {
     cpu_t *cpu = ctx->cpu;
-    instr_t *i = ctx->curr_instr;
+    const instr_t *i = ctx->curr_instr;
 
-    operand_t *from = &i->operands[0];
-    operand_t *to = &i->operands[1];
+    const operand_t *from = &i->operands[0];
+    const operand_t *to = &i->operands[1];
     imm_reg_ops_assert(i, from, to);
     watch_reg_state(to->reg, cpu, write_reg_val(cpu, to->reg, from->word.value),
                     ctx->wf);
@@ -240,11 +256,13 @@ static void sim_mov_acc(sim_ctx_t *ctx) {}
 static void sim_arithmetic_reg_mem(sim_ctx_t *ctx, arithmetic arithmetic_func,
                                    i8 write_back) {
     cpu_t *cpu = ctx->cpu;
-    instr_t *i = ctx->curr_instr;
+    const instr_t *i = ctx->curr_instr;
     memory_t *mem = ctx->mem;
 
-    operand_t *to = get_d(i->ctrl_bits) ? &i->operands[0] : &i->operands[1];
-    operand_t *from = get_d(i->ctrl_bits) ? &i->operands[1] : &i->operands[0];
+    const operand_t *to =
+        get_d(i->ctrl_bits) ? &i->operands[0] : &i->operands[1];
+    const operand_t *from =
+        get_d(i->ctrl_bits) ? &i->operands[1] : &i->operands[0];
     const bit_width_e bit_width_e =
         get_w(i->ctrl_bits) ? BIT_SIZE_16 : BIT_SIZE_8;
     const mod_e mod_e = get_m(i->ctrl_bits);
@@ -292,10 +310,10 @@ static void sim_arithmetic_imm_reg_mem(sim_ctx_t *ctx,
                                        arithmetic arithmetic_func,
                                        i8 write_back) {
     cpu_t *cpu = ctx->cpu;
-    instr_t *i = ctx->curr_instr;
+    const instr_t *i = ctx->curr_instr;
 
-    operand_t *from = &i->operands[0];
-    operand_t *to = &i->operands[1];
+    const operand_t *from = &i->operands[0];
+    const operand_t *to = &i->operands[1];
 
     imm_reg_mem_ops_assert(i, from, to);
 
@@ -335,10 +353,10 @@ static void sim_arithmetic_imm_reg_mem(sim_ctx_t *ctx,
 static void sim_arithmetic_imm_acc(sim_ctx_t *ctx, arithmetic arithmetic_func,
                                    i8 write_back) {
     cpu_t *cpu = ctx->cpu;
-    instr_t *i = ctx->curr_instr;
+    const instr_t *i = ctx->curr_instr;
 
-    operand_t *reg_a_t = &i->operands[0];
-    operand_t *imm = &i->operands[1];
+    const operand_t *reg_a_t = &i->operands[0];
+    const operand_t *imm = &i->operands[1];
     const bit_width_e bit_width_e =
         get_w(i->ctrl_bits) ? BIT_SIZE_16 : BIT_SIZE_8;
 
@@ -357,10 +375,8 @@ static void sim_arithmetic_imm_acc(sim_ctx_t *ctx, arithmetic arithmetic_func,
 
 static void sim_cond_jmp(sim_ctx_t *ctx) {
     cpu_t *cpu = ctx->cpu;
-    instr_t *i = ctx->curr_instr;
-    instr_stream_t *stream_t = ctx->stream;
-    i32 *stream_cursor = ctx->stream_cursor;
-
+    const instr_t *i = ctx->curr_instr;
+    hashmap_instr_t *stream_t = ctx->stream;
     i32 new_ip = 0;
     const cond_jmp_e cond_jmp_e = decode_cond_jump_variant(i->raw_ctrl_bits1);
 
@@ -369,18 +385,12 @@ static void sim_cond_jmp(sim_ctx_t *ctx) {
         if (!(get_zf(cpu->flags))) {
             new_ip = cpu->ip + (i8)i->raw_ctrl_bits2;
         } else {
-            *stream_cursor += 1;
             return;
         }
         break;
     }
     assert(new_ip >= 0);
-    const i32 f = new_ip > cpu->ip ? 1 : -1;
-    for (; *stream_cursor >= 0 && *stream_cursor < stream_t->count;
-         *stream_cursor += f) {
-        if (stream_t->stream[*stream_cursor].base_addr == new_ip) {
-            watch_cpu_ip(cpu, cpu->ip = new_ip, ctx->wf);
-            return;
-        }
-    }
+    const instr_t *jmp_dest_instr = hashmap_instr_get(ctx->stream, new_ip);
+    assert(jmp_dest_instr != NULL);
+    watch_cpu_ip(cpu, cpu->ip = new_ip, ctx->wf);
 }

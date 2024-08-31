@@ -32,22 +32,23 @@
     print_cpu_flags(flags, wf);                                                \
     xfprintf(wf, ",");
 
-u32 print_word(word_t *w, FILE *wf);
+u32 print_word(const word_t *w, FILE *wf);
 
-u32 print_eff_addr_expr(eff_addr_expr_t *e, FILE *wf);
+u32 print_eff_addr_expr(const eff_addr_expr_t *e, FILE *wf);
 
 u32 print_reg(const reg_t *r, FILE *wf);
 
-u32 print_operand(operand_t *o, FILE *wf);
+u32 print_operand(const operand_t *o, FILE *wf);
 
-u32 print_jmp_instr(instr_t *in, FILE *wf);
+u32 print_jmp_instr(const instr_t *in, FILE *wf);
 
-u32 print_instr(instr_t *instr_t, u8 show_base_addr, u8 as_comment, FILE *wf);
+u32 print_instr(const instr_t *instr_t, u8 show_base_addr, u8 as_comment,
+                FILE *wf);
 
-void print_cpu(cpu_t *cpu, FILE *wf);
+void print_cpu(const cpu_t *cpu, FILE *wf);
 
-void print_cpu_flags(u16 *flag_reg, FILE *wf);
+void print_cpu_flags(const u16 *flag_reg, FILE *wf);
 
-void print_cpu_reg(cpu_t *cpu, const reg_t *reg_t, FILE *wf);
+void print_cpu_reg(const cpu_t *cpu, const reg_t *reg_t, FILE *wf);
 
 #endif

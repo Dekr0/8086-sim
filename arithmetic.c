@@ -28,9 +28,8 @@ u32 binary_add(u16 *flags_reg, u32 a, u32 b, const bit_width_e width_e) {
     u8 bit_a = 0, bit_b = 0;
     u32 sum = 0;
     for (u8 i = 0; i < bits_width; i++) {
-        if (carry_bit && i == 4) {
+        if (carry_bit && i == 4)
             aux_flag = 1;
-        }
         bit_a = a & 1;
         a >>= 1;
         bit_b = b & 1;
@@ -52,11 +51,8 @@ u32 binary_add(u16 *flags_reg, u32 a, u32 b, const bit_width_e width_e) {
     }
 
     u8 one_counts = 0;
-    for (u8 i = 0; i < 8; i++) {
-        if ((sum >> i) & 1) {
-            one_counts++;
-        }
-    }
+    for (u8 i = 0; i < 8; i++)
+        ((sum >> i) & 1) && one_counts++;
 
     set_cf(*flags_reg, carry_bit);
     set_pf(*flags_reg, !(one_counts % 2));
@@ -94,9 +90,8 @@ u32 binary_sub(u16 *flags_reg, u32 a, u32 b, const bit_width_e bit_width_e) {
     u8 bit_b = 0;
     u32 diff = 0;
     for (u8 i = 0; i < bits_width; i++) {
-        if (borrow_out && i == 4) {
+        if (borrow_out && i == 4)
             aux_flag = 1;
-        }
         bit_a = a & 1;
         a >>= 1;
         bit_b = b & 1;
@@ -119,11 +114,8 @@ u32 binary_sub(u16 *flags_reg, u32 a, u32 b, const bit_width_e bit_width_e) {
     }
 
     u8 one_counts = 0;
-    for (u8 i = 0; i < 8; i++) {
-        if ((diff >> i) & 1) {
-            one_counts++;
-        }
-    }
+    for (u8 i = 0; i < 8; i++)
+        ((diff >> i) & 1) && one_counts++;
 
     set_cf(*flags_reg, borrow_out);
     set_pf(*flags_reg, !(one_counts % 2));

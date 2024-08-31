@@ -29,9 +29,10 @@ typedef struct cpu_t {
     u16 regs[REG_DS];
 } cpu_t;
 
-u32 calculate_eff_addr_expr(cpu_t *cpu, eff_addr_expr_t *expr, const mod_e mod);
+u32 calculate_eff_addr_expr(const cpu_t *cpu, const eff_addr_expr_t *expr,
+                            const mod_e mod);
 
-u32 read_reg(cpu_t *cpu, const reg_t *reg_t);
+u32 read_reg(const cpu_t *cpu, const reg_t *reg_t);
 
 void write_reg_val(cpu_t *cpu, const reg_t *reg_t, u32 val);
 
