@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -g
+CFLAGS := -g -Wall
 
 SRC_DIR := . 
 ASM_DIR := ./source

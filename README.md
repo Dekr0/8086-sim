@@ -74,6 +74,17 @@ mode will result crashes.
 
 ## Design
 
+- The current state of this project is plagued by early abstraction. What I'm 
+planning to do (should be do in the first place) is to write out all possible 
+branch case with minimal amount of abstraction and code reuse in the first place
+for each process (disassemble, simulation, clock estimation). This is for seeing 
+the whole picture (piggy backing). 
+- Then, attempt to come up with a reasonable refactor and abstraction design. 
+Even if the attempt is failure, what I have is a functional code base that can 
+be read very imperatively and sequentially without wrapping our head around and 
+jump between functions and files. The constant mental context switching when hopping 
+functions and files introduce most of the bugs I wrote during this project.
+
 ### Decoding Flow Control
 
 1. Create 1MB bytes array in the heap to present the 8086 memory
