@@ -11,26 +11,26 @@
         fprintf(f, __VA_ARGS__);                                               \
     }
 
-#define watch_cpu_ip(cpu, effect, wf)                                          \
-    xfprintf(wf, "IP:%#04x->", cpu->ip);                                       \
+#define watch_cpu_ip(cpu, effect, f)                                           \
+    xfprintf(f, "IP:%#04x->", cpu->BIU.IP);                                    \
     effect;                                                                    \
-    xfprintf(wf, "%#04x", cpu->ip);                                            \
-    xfprintf(wf, ",");
+    xfprintf(f, "%#04x", cpu->BIU.IP);                                         \
+    xfprintf(f, ",");
 
-#define watch_reg_state(reg, cpu, effect, wf)                                  \
-    print_cpu_reg(cpu, reg, wf);                                               \
+#define watch_reg_state(reg, cpu, effect, f)                                   \
+    print_cpu_reg(cpu, reg, f);                                                \
     effect;                                                                    \
-    xfprintf(wf, "->");                                                        \
-    print_cpu_reg(cpu, reg, wf);                                               \
-    xfprintf(wf, ",");
+    xfprintf(f, "->");                                                         \
+    print_cpu_reg(cpu, reg, f);                                                \
+    xfprintf(f, ",");
 
-#define watch_cpu_flags(flags, effect, wf)                                     \
-    xfprintf(wf, "flags:");                                                    \
-    print_cpu_flags(flags, wf);                                                \
+#define watch_cpu_flags(flags, effect, f)                                      \
+    xfprintf(f, "flags:");                                                     \
+    print_cpu_flags(flags, f);                                                 \
     effect;                                                                    \
-    xfprintf(wf, "->");                                                        \
-    print_cpu_flags(flags, wf);                                                \
-    xfprintf(wf, ",");
+    xfprintf(f, "->");                                                         \
+    print_cpu_flags(flags, f);                                                 \
+    xfprintf(f, ",");
 
 u32 print_word(const word_t *w, FILE *wf);
 

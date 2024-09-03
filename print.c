@@ -182,7 +182,7 @@ u32 print_instr(const instr_t *instr_t, u8 show_base_addr, u8 as_comment,
             fprintf(f, "%s ", get_w(instr_t->ctrl_bits) ? "word" : "byte");
         break;
     }
-    if (instr_t->operands[1].type == OPCODE_NONE) {
+    if (instr_t->operands[1].type == OPERAND_NONE) {
         nprint += print_operand(&instr_t->operands[0], f);
         return nprint;
     }
@@ -202,11 +202,13 @@ void print_cpu(const cpu_t *cpu, FILE *f) {
     if (f == NULL)
         return;
     fprintf(f, "\n; CPU state:\n");
-    for (u32 i = REG_A; i <= REG_DS; i++)
-        printf("; %s:%#04x\n", get_reg_name(i), cpu->regs[i - 1]);
-    fprintf(f, "; IP:%#04x\n", cpu->ip);
+    for (u32 i = REG_A; i <= REG_DI; i++)
+        fprintf(f, "; %s:%#04x\n", get_reg_name(i), cpu->EU.regs[i - REG_A]);
+    for (u32 i = REG_ES; i <= REG_DS; i++)
+        fprintf(f, "; %s:%#04x\n", get_reg_name(i), cpu->BIU.regs[i - REG_ES]);
+    fprintf(f, "; IP:%#04x\n", cpu->BIU.IP);
     fprintf(f, "; flags: ");
-    print_cpu_flags(&cpu->flags, f);
+    print_cpu_flags(&cpu->EU.flags, f);
 }
 
 void print_cpu_flags(const u16 *flag_reg, FILE *f) {
@@ -235,5 +237,11 @@ void print_cpu_flags(const u16 *flag_reg, FILE *f) {
 void print_cpu_reg(const cpu_t *cpu, const reg_t *reg_t, FILE *f) {
     if (f == NULL)
         return;
-    fprintf(f, "%s:%#04x", get_reg_name(reg_t->reg), cpu->regs[reg_t->reg - 1]);
+    if (reg_t->reg <= REG_DI)
+        fprintf(f, "%s:%#04x", get_reg_name(reg_t->reg),
+                cpu->EU.regs[reg_t->reg - REG_A]);
+    else
+        fprintf(f, "%s:%#04x", get_reg_name(reg_t->reg),
+                cpu->BIU.regs[reg_t->reg - REG_ES]);
 }
+
