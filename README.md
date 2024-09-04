@@ -1,44 +1,43 @@
 ## Introduction
 
-- A command line based 8086 instruction dissembler and execution simulator
-- What it's capable of:
-    - dissemblying binary assembly code into the original readable assembly code 
-    (There are a few remarks.)
-    - simulating instructions execution and side effects on a virtual 8086 CPU 
-    and virtual 8086's 1 MB memory
-    - TUI visualizer
-- This project is my take on one of the assignment in [Casey's performance awareness programming
-courses](https://www.computerenhance.com/p/table-of-contents). 
+- A command line based 8086 Emulator that attempts to emulate every aspect of 
+the 8086 CPU.
+- The emulator comes with the following features:
+    - dissembles binary assembly code into the original readable assembly code 
+    (There are a few remarks)
+    - estimate CPU clock cycle under ideal scenario (assume BIU is always fill 
+    up the instruction queue and EU does not fast execute)
+    - simulates instructions execution and side effects on the virtual 8086 CPU 
+    and virtual 8086 memory
+    - TUI based simulation
 
 ## State of This Project
 
 - The accuracy of this dissembler and simulator is not guaranteed. 8086 has a very
 simple and small instructions set compare to others. However, there are edge cases
 and quirks for some instructions when some specific fields are set. It's no surprise
-I missed a hanful of them when I implemented it against the 8086 family manual.
-- Most of the testing are done by compared results from other existing 8086 emulators or manually
-deriving the result against the 8086 family manual.
+I missed a handful of them when I implemented it against the 8086 family manual.
+- Most of the testing are done by compared results from other existing 8086 emulators 
+or manually deriving the result against the 8086 family manual.
 - Not all instructions can be recognized, decoded, and simulated. Read 
 [here](https://github.com/Dekr0/8086-sim/blob/bd1bea267dca4d591cdb696e3ccf6d18a913efcc/instruction.h#L28) to see what
 instructions can be recognized and decoded, and [here](https://github.com/Dekr0/8086-sim/blob/bd1bea267dca4d591cdb696e3ccf6d18a913efcc/sim.c#L63)
 to see what instructions can be simulated.
 - The execution simulator does not behaves exactly like a physical CPU in terms of
-instruction fetching, deocding, and execution.
+instruction fetching, decoding, and execution.
 - However, the hardware simulation is something I want to implement and capture in the future,
-espically given that dealing with circuits and digital logic are part of what I did during
+especially given that dealing with circuits and digital logic are part of what I did during
  my degree. A prime example of this is hardware simulation in Xilinx Vivado and Cadence.
-- The source code for the TUI was badly written. I implemented it as I learn about 
-how to make TUI application with ANSI escape sequence. 
-    - It definitely needs to be rewrote in a more declare manner with a set of 
-    pre-defined render procedures, or common TUI libraries like `ncursor`, 
-    `Notcurses`, or `bubbletea`.
-- I'm planning to provide the GUI written in Raylib as well but TUI is prioritized first.
+- The source code for TUI was badly written. I implemented it as I learn about 
+how to make TUI application with ANSI escape sequence and `Notcures`. UI performance 
+will degrade under high rendering rate along with drastic screen change.
 
 ## Usage
 
 ### Prerequisite 
 
 - `gcc` and `Makefile`
+- `Notcurses`
 
 ### Compiling
 
@@ -53,11 +52,17 @@ dissembled assembly code to `[output_disassembly_file]`
     side effect of each instruction as well as the final result
     - `-i`: run the emulator in the interactive mode
         - `-stdout` need to be disabled
+    - `--auto-run [time between rendering in us]`: auto execution with timeout between each render 
+        - must come after `-i` flag
     - `-stdout`: display all the results in the `stdout`
     - `-mdump [memory_dump_file]`: dump 1MB virtual memory of 8086 into 
     `[memory_dump_file]`
-        - `[memory_dump_file]` must follow right flag `[-mdump]`
-
+        - `[memory_dump_file]` must follow right flag `[-mdump`]`
+- During interactive mode,
+    - press `q` to exit the TUI
+    - press `j` or `k` to navigate the source code previewer
+    - press `h` or `l` to navigate the memory previewer
+    - press `n` to execute the next instruction
 
 ## Remark
 
