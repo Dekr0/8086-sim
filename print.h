@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "cpu.h"
+#include "string_builder.h"
 #include "instruction.h"
 
 #define xfprintf(f, ...)                                                       \
@@ -44,6 +45,19 @@ u32 print_jmp_instr(const instr_t *in, FILE *wf);
 
 u32 print_instr(const instr_t *instr_t, u8 show_base_addr, u8 as_comment,
                 FILE *wf);
+
+i8 sprint_word(const word_t *w, str_builder_t *b);
+
+i8 sprint_eff_addr_expr(const eff_addr_expr_t *e, str_builder_t *b);
+
+i8 sprint_reg(const reg_t *r, str_builder_t *b);
+
+i8 sprint_operand(const operand_t *o, str_builder_t *b);
+
+i8 sprint_jmp_instr(const instr_t *in, str_builder_t *b);
+
+i8 sprint_instr(const instr_t *instr_t, u8 show_base_addr, u8 as_comment,
+                str_builder_t *b);
 
 void print_cpu(const cpu_t *cpu, FILE *wf);
 

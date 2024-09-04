@@ -33,12 +33,12 @@ hashmap_instr_t *init_hashmap_instr();
 
 void free_hashmap_instr(hashmap_instr_t *h);
 
-instr_t *hashmap_instr_get(hashmap_instr_t *h, const u64 base_addr);
+instr_t *hashmap_instr_get(const hashmap_instr_t *h, const u64 base_addr);
 
 i8 hashmap_instr_put(hashmap_instr_t *h, const instr_t i);
 
-u64 hashmap_instr_cap(hashmap_instr_t *h);
+u64 hashmap_instr_cap(const hashmap_instr_t *h);
 
-u64 hashmap_instr_size(hashmap_instr_t *h);
+u64 hashmap_instr_size(const hashmap_instr_t *h);
 
 #endif

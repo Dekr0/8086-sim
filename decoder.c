@@ -36,8 +36,6 @@ static i32 decode_acc_mem(decoder_context_t *dc, instr_t *instr_t);
 
 static i32 decode_acc_imm(decoder_context_t *dc, instr_t *instr_t);
 
-static i32 label_jmp(u32 jmp, instr_t *i_arr, const u32 size);
-
 static opcode_e decode_opcode(u8 b1, u8 b2) {
     if (b1 >> 2 == 0b100010)
         return OPCODE_MOV_REG_MEM_REG;
@@ -106,8 +104,6 @@ static i32 decode_word(decoder_context_t *dc, word_t *w) {
 static i32 decode_imm(const u8 c, decoder_context_t *dc, operand_t *o) {
     const u8 s = get_s(c);
     const u8 w = get_w(c);
-    u8 *mem = dc->mem->mem;
-    u32 *IP = dc->IP;
     o->type = OPERAND_WORD;
     o->word.type = WORD_TYPE_IMM;
     if (!s && w)
@@ -218,8 +214,7 @@ static i32 decode_acc_imm(decoder_context_t *dc, instr_t *instr) {
 }
 
 hashmap_instr_t *load_instr_stream(memory_t *mem_t) {
-    u8 b1 = 0;
-    u8 b2 = 0;
+    i8 r = EXIT_FAILURE;
     u8 *mem = mem_t->mem;
     u32 IP = 0;
     opcode_e opcode = OPCODE_NONE;
@@ -234,18 +229,18 @@ hashmap_instr_t *load_instr_stream(memory_t *mem_t) {
     vector_instr_p_t *jmp_instrs = init_vector_instr_p(2);
     if (jmp_instrs == NULL) {
         fprintf(stderr, "init_vector_instr error\n");
-        goto Abort;
+        goto cleanup;
     }
     hashmap_instr_t *instr_stream = init_hashmap_instr();
     if (instr_stream == NULL) {
         fprintf(stderr, "init_hashmap_instr error\n");
-        goto Abort;
+        goto cleanup;
     }
 
     instr_t *instr = calloc(1, sizeof(instr_t));
     if (instr == NULL) {
         fprintf(stderr, "instr_t calloc error\n");
-        goto Abort;
+        goto cleanup;
     }
 
     for (IP = 0; IP + 1 < mem_t->source_end;) {
@@ -256,7 +251,7 @@ hashmap_instr_t *load_instr_stream(memory_t *mem_t) {
         if ((opcode = decode_opcode(mem[IP], mem[IP + 1])) == OPCODE_NONE) {
             fprintf(stderr, "Opcode is unknown for byte at address %d\n", IP);
             fprintf(stderr, "Abort instruction decoding\n");
-            goto Abort;
+            goto cleanup;
         }
         instr->opcode = opcode;
 
@@ -267,32 +262,32 @@ hashmap_instr_t *load_instr_stream(memory_t *mem_t) {
          * */
         switch (instr->opcode) {
         case OPCODE_NONE:
-            goto Abort;
+            goto cleanup;
             break;
         case OPCODE_MOV_REG_MEM_REG:
             set_d(instr->ctrl_bits, mem[IP] >> 1 & 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_mod_reg_rsm(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_MOV_IMM_REG_MEM:
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_imm_mod_reg_mem(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_MOV_IMM_REG:
             set_w(instr->ctrl_bits, mem[IP] >> 3 & 1);
             if (decode_imm_reg(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_MOV_ACC:
             set_d(instr->ctrl_bits, !(mem[IP] >> 1 & 1));
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_acc_mem(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_MOV_REG_MEM_SEG:
@@ -302,70 +297,70 @@ hashmap_instr_t *load_instr_stream(memory_t *mem_t) {
             instr->operands[0].type = OPERAND_REG;
             instr->operands[0].reg = get_seg_regs(mem[IP + 1] >> 3 & 3);
             if (decode_mod_rsm(instr->ctrl_bits, dc, &instr->operands[1]) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_ADD_REG_MEM_REG:
             set_d(instr->ctrl_bits, mem[IP] >> 1 & 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_mod_reg_rsm(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_ADD_IMM_REG_MEM:
             set_s(instr->ctrl_bits, mem[IP] >> 1 & 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_imm_mod_reg_mem(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_ADD_IMM_ACC:
             set_d(instr->ctrl_bits, 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_acc_imm(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_SUB_REG_MEM_REG:
             set_d(instr->ctrl_bits, mem[IP] >> 1 & 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_mod_reg_rsm(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_SUB_IMM_REG_MEM:
             set_s(instr->ctrl_bits, mem[IP] >> 1 & 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_imm_mod_reg_mem(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_SUB_IMM_ACC:
             set_d(instr->ctrl_bits, 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_acc_imm(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_CMP_REG_MEM_REG:
             set_d(instr->ctrl_bits, mem[IP] >> 1 & 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_mod_reg_rsm(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_CMP_IMM_REG_MEM:
             set_s(instr->ctrl_bits, mem[IP] >> 1 & 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_imm_mod_reg_mem(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_CMP_IMM_ACC:
             set_d(instr->ctrl_bits, 1);
             set_w(instr->ctrl_bits, mem[IP] & 1);
             if (decode_acc_imm(dc, instr) == -1)
-                goto Abort;
+                goto cleanup;
             instr->size = IP - instr->base_addr;
             break;
         case OPCODE_COND_JMP:
@@ -395,25 +390,33 @@ hashmap_instr_t *load_instr_stream(memory_t *mem_t) {
     }
 
     const instr_t *forward_jmp_instr = NULL;
+
     instr_t *jmp_dest_instr = NULL;
+
     for (u32 k = 0; k < vector_instr_p_size(jmp_instrs); k++) {
-        assert((forward_jmp_instr = vector_instr_p_get(jmp_instrs, k)) != NULL);
-        assert((jmp_dest_instr = hashmap_instr_get(
+        if ((forward_jmp_instr = vector_instr_p_get(jmp_instrs, k)) == NULL)
+            goto cleanup;
+        if ((jmp_dest_instr = hashmap_instr_get(
                     instr_stream,
                     forward_jmp_instr->base_addr + forward_jmp_instr->size +
-                        forward_jmp_instr->operands[0].word.value)) != NULL);
+                        forward_jmp_instr->operands[0].word.value)) == NULL)
+            goto cleanup;
         jmp_dest_instr->is_jmp_dest = 1;
     }
 
-    return instr_stream;
-Abort:
-    if (instr_stream != NULL)
+    r = EXIT_SUCCESS;
+
+    goto cleanup;
+cleanup:
+    if (r && instr_stream != NULL) {
         free_hashmap_instr(instr_stream);
+        instr_stream = NULL;
+    }
     if (jmp_instrs != NULL)
         free_vector_instr_p(jmp_instrs);
     if (instr != NULL)
         free(instr);
     if (dc != NULL)
         free(dc);
-    return NULL;
+    return instr_stream;
 }

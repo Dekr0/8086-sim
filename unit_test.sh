@@ -4,9 +4,11 @@ unit_test() {
     input_file="${1}"
     disassemble_file="disassemble/$(basename "${input_file}").asm"
     reassemble_file="reassemble/$(basename "${input_file}")"
-    ./main -stdout -e -mdump image.data "${input_file}" > "${disassemble_file}"
+    exec_ref_file="answer_unit_test/$(basename "${input_file}")"
+    ./main -e -stdout "${input_file}" > "${disassemble_file}"
     nasm "${disassemble_file}" -o "${reassemble_file}"
     diff "${reassemble_file}" "${input_file}"
+    diff "${disassemble_file}" "${exec_ref_file}.asm"
     echo "$(basename "${input_file}") pass"
 }
 

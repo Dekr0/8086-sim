@@ -90,7 +90,8 @@ typedef enum reg_e : u8 {
     REG_ES,
     REG_CS,
     REG_SS,
-    REG_DS
+    REG_DS,
+    REG_IP
 } reg_e;
 
 typedef enum word_type_e : u8 {
@@ -128,7 +129,7 @@ typedef struct operand_t {
     };
 } operand_t;
 
-typedef struct {
+typedef struct instr_t {
     // 6 5 4 3 2 1   0
     // d s v w z m o d
     u8 ctrl_bits;
@@ -137,6 +138,9 @@ typedef struct {
     u8 is_jmp_dest;
     u32 base_addr;
     u32 size;
+    u32 machine_code;
+    struct instr_t *prev;
+    struct instr_t *next;
     prefix_e prefix;
     opcode_e opcode;
     operand_t operands[MAX_OPERAND];

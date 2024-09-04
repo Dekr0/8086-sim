@@ -1,30 +1,26 @@
 #ifndef TUI_8086_SIM_H
 #define TUI_8086_SIM_H
 
+#include <stdio.h>
+
 #include "cpu.h"
 #include "sim.h"
-#include "stdlib.h"
+#include "type.h"
 
-#define FIELD_BG 238
-#define TITLE_BG 235
-#define FG 231
-#define LEFT_UP_CORNER "┌"
-#define RIGHT_UP_CORNER "┐"
-#define LEFT_BOTTOM_CORNER "└"
-#define RIGHT_BOTTOM_CORNER "┘"
-#define LINE "─"
-#define BAR "│"
+typedef struct tui_t tui_t;
 
-void clear_screen();
+typedef struct theme_rgb_32_t theme_rgb_32_t;
 
-void draw_tui(sim_ctx_t *ctx);
+typedef struct dim_t dim_t;
 
-void hide_cursor();
+i8 render(tui_t *t, const sim_ctx_t *ctx);
 
-void show_cursor();
+u32 get_input(tui_t *t);
 
-void move_down_begin(u32 line);
+u32 get_input_nblock(tui_t *t);
 
-int init_tui(char **tty_buf, const size_t size);
+tui_t *init_tui();
+
+void free_tui(tui_t *tui);
 
 #endif

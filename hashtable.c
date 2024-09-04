@@ -86,7 +86,6 @@ hashmap_instr_t *init_hashmap_instr() {
     hashmap_instr_t *h = calloc(1, sizeof(hashmap_instr_t));
     if (h == NULL)
         return NULL;
-    h->map = 0;
     if ((h->map = calloc(16, sizeof(instr_t))) == NULL) {
         free(h);
         return NULL;
@@ -103,7 +102,7 @@ void free_hashmap_instr(hashmap_instr_t *h) {
     free(h);
 }
 
-instr_t *hashmap_instr_get(hashmap_instr_t *h, const u64 base_addr) {
+instr_t *hashmap_instr_get(const hashmap_instr_t *h, const u64 base_addr) {
     u64 hash = instr_hasing(base_addr);
     u64 idx = hash & (h->cap - 1);
     while (h->map[idx].opcode != OPCODE_NONE) {
@@ -127,6 +126,6 @@ i8 hashmap_instr_put(hashmap_instr_t *h, const instr_t i) {
     return 0;
 }
 
-u64 hashmap_instr_cap(hashmap_instr_t *h) { return h->cap; }
+u64 hashmap_instr_cap(const hashmap_instr_t *h) { return h->cap; }
 
-u64 hashmap_instr_size(hashmap_instr_t *h) { return h->size; }
+u64 hashmap_instr_size(const hashmap_instr_t *h) { return h->size; }

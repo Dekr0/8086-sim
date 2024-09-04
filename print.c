@@ -215,23 +215,23 @@ void print_cpu_flags(const u16 *flag_reg, FILE *f) {
     if (f == NULL)
         return;
     if (get_cf(*flag_reg))
-        printf("C");
+        fprintf(f, "C");
     if (get_pf(*flag_reg))
-        printf("P");
+        fprintf(f, "P");
     if (get_af(*flag_reg))
-        printf("A");
+        fprintf(f, "A");
     if (get_zf(*flag_reg))
-        printf("Z");
+        fprintf(f, "Z");
     if (get_sf(*flag_reg))
-        printf("S");
+        fprintf(f, "S");
     if (get_of(*flag_reg))
-        printf("O");
+        fprintf(f, "O");
     if (get_if(*flag_reg))
-        printf("I");
+        fprintf(f, "I");
     if (get_df(*flag_reg))
-        printf("D");
+        fprintf(f, "D");
     if (get_tf(*flag_reg))
-        printf("T");
+        fprintf(f, "T");
 }
 
 void print_cpu_reg(const cpu_t *cpu, const reg_t *reg_t, FILE *f) {
@@ -245,3 +245,180 @@ void print_cpu_reg(const cpu_t *cpu, const reg_t *reg_t, FILE *f) {
                 cpu->BIU.regs[reg_t->reg - REG_ES]);
 }
 
+i8 sprint_word(const word_t *w, str_builder_t *b) {
+    if (b == NULL)
+        return 1;
+    switch (w->type) {
+    case WORD_TYPE_NONE:
+        return 0;
+    case WORD_TYPE_ADDR:
+        return put_fmt(b, "[%d]", w->value);
+    case WORD_TYPE_DISP:
+        if (w->sign) {
+            switch (w->width) {
+            case BIT_SIZE_8:
+                if ((i8)w->value > 0)
+                    return put_fmt(b, "+%d", (i8)w->value);
+
+                return put_fmt(b, "%d", (i8)w->value);
+            case BIT_SIZE_16:
+                if ((i16)w->value > 0)
+                    return put_fmt(b, "+%d", (i16)w->value);
+
+                return put_fmt(b, "%d", (i16)w->value);
+            default:
+                assert(0);
+            }
+        }
+        return put_fmt(b, "+%d", w->value);
+    case WORD_TYPE_IMM:
+        if (w->sign) {
+            switch (w->width) {
+            case BIT_SIZE_8:
+                return put_fmt(b, "%d", (i8)w->value);
+            case BIT_SIZE_16:
+                return put_fmt(b, "%d", (i16)w->value);
+            default:
+                assert(0);
+            }
+        }
+        return put_fmt(b, "%d", w->value);
+    }
+}
+
+i8 sprint_reg(const reg_t *r, str_builder_t *b) {
+    if (b == NULL)
+
+        return 1;
+    if (put_fmt(b, "%s", get_reg_name(r->reg))) return 1;
+
+    if (r->reg > REG_B)
+        return 0;
+
+    if (r->length == BIT_SIZE_8)
+        return put_fmt(b, "%s", r->offset ? "h" : "l");
+    
+    return put_char(b, 'X');
+}
+
+i8 sprint_eff_addr_expr(const eff_addr_expr_t *e, str_builder_t *b) {
+    if (b == NULL)
+        return 1;
+
+    if (put_char(b, '[')) return 1;
+
+    if (e->da)
+        return put_fmt(b, "%d", e->disp.value) || put_char(b, ']');
+
+    if (sprint_reg(e->terms[0], b)) return 1;
+
+    if (e->terms[1]->reg != REG_NONE)
+        return put_char(b, '+') || sprint_reg(e->terms[1], b);
+
+    return sprint_word(&e->disp, b) || put_char(b, ']');
+}
+
+i8 sprint_operand(const operand_t *o, str_builder_t *b) {
+    if (b == NULL)
+        return 1;
+    switch (o->type) {
+    case OPERAND_NONE:
+        return 0;
+    case OPERAND_EFF_ADDR_EXPR:
+        return sprint_eff_addr_expr(&o->expr, b);
+    case OPERAND_WORD:
+        return sprint_word(&o->word, b);
+    case OPERAND_REG:
+        return sprint_reg(o->reg, b);
+    }
+}
+
+i8 sprint_jmp_instr(const instr_t *instr_t, str_builder_t *b) {
+    if (b == NULL)
+        return 1;
+    const char *name;
+    const i32 jmp =
+        instr_t->operands[0].word.value + instr_t->base_addr + instr_t->size;
+    switch (instr_t->opcode) {
+    case OPCODE_COND_JMP:
+        name = get_cond_jmp(decode_cond_jump_variant(instr_t->raw_ctrl_bits1));
+        break;
+    case OPCODE_LOOP_JMP:
+        name = get_loop_jmp(decode_loop_variant(instr_t->raw_ctrl_bits1));
+        break;
+    default:
+        assert(0);
+    }
+    if (put_fmt(b, "%s ", name)) return 1;
+
+    if (put_fmt(b, "jmp_addr%d", jmp)) return 1;
+
+    return 0;
+}
+
+i8 sprint_instr(const instr_t *instr_t, u8 show_base_addr, u8 as_comment,
+                str_builder_t *b) {
+    if (b == NULL)
+        return 1;
+
+    if (show_base_addr && put_fmt(b, 
+                "; address = ??? + 0x%x, instruction width = %u ;\n",
+                    instr_t->base_addr, instr_t->size))
+        return 1;
+
+    if (as_comment && put_str(b, "; ", 2)) return 1;
+
+    if (instr_t->is_jmp_dest && put_fmt(b, "jmp_addr%d: ", instr_t->base_addr))
+        return 1;
+    const char *name;
+    switch (instr_t->opcode) {
+    case OPCODE_NONE:
+        return 0;
+    case OPCODE_MOV_REG_MEM_REG:
+    case OPCODE_MOV_IMM_REG_MEM:
+    case OPCODE_MOV_IMM_REG:
+    case OPCODE_MOV_ACC:
+    case OPCODE_MOV_REG_MEM_SEG:
+        name = "mov";
+        break;
+    case OPCODE_ADD_REG_MEM_REG:
+    case OPCODE_ADD_IMM_REG_MEM:
+    case OPCODE_ADD_IMM_ACC:
+        name = "add";
+        break;
+    case OPCODE_SUB_REG_MEM_REG:
+    case OPCODE_SUB_IMM_REG_MEM:
+    case OPCODE_SUB_IMM_ACC:
+        name = "sub";
+        break;
+    case OPCODE_CMP_REG_MEM_REG:
+    case OPCODE_CMP_IMM_REG_MEM:
+    case OPCODE_CMP_IMM_ACC:
+        name = "cmp";
+        break;
+    case OPCODE_COND_JMP:
+    case OPCODE_LOOP_JMP:
+        return sprint_jmp_instr(instr_t, b);
+    }
+    if (put_fmt(b, "%s ", name))
+        return 1;
+
+    switch (instr_t->prefix) {
+    case PREFIX_NONE:
+        break;
+    case PREFIX_EXPLICIT_SIZE:
+        if (put_fmt(b, "%s ", get_w(instr_t->ctrl_bits) ? "word" : "byte")) 
+            return 1;
+        break;
+    }
+
+    if (instr_t->operands[1].type == OPERAND_NONE)
+        return sprint_operand(&instr_t->operands[0], b);
+
+    if (get_d(instr_t->ctrl_bits))
+        return sprint_operand(&instr_t->operands[0], b) || put_char(b, ',') || 
+            sprint_operand(&instr_t->operands[1], b);
+
+    return sprint_operand(&instr_t->operands[1], b) || put_char(b, ',') || 
+        sprint_operand(&instr_t->operands[0], b); 
+}

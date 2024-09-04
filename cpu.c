@@ -9,14 +9,19 @@ u32 read_reg(const cpu_t *cpu, const reg_t *reg_t) {
         assert(0);
     if (reg_t->length == BIT_SIZE_16) {
         assert(reg_t->offset == BIT_SIZE_0);
-        return cpu->regs[reg_t->reg - REG_A];
+
+        if (reg_t->reg <= REG_DI)
+            return cpu->EU.regs[reg_t->reg - REG_A];
+
+        return cpu->BIU.regs[reg_t->reg - REG_ES];
     }
-    /** length is BIT_SIZE_8 */
-    if (reg_t->offset > BIT_SIZE_8)
+
+    if (reg_t->offset > BIT_SIZE_8 && reg_t->reg > REG_DI)
         assert(0);
+
     return reg_t->offset == BIT_SIZE_0
-               ? cpu->regs[reg_t->reg - REG_A] & BIT_MASK_8_LO
-               : (cpu->regs[reg_t->reg - REG_A] & BIT_MASK_8_HI) >>
+               ? cpu->EU.regs[reg_t->reg - REG_A] & BIT_MASK_8_LO
+               : (cpu->EU.regs[reg_t->reg - REG_A] & BIT_MASK_8_HI) >>
                      BYTE_BIT_LENGTH;
 }
 
@@ -26,20 +31,23 @@ void write_reg_val(cpu_t *cpu, const reg_t *reg_t, u32 val) {
         assert(0);
     if (reg_t->length == BIT_SIZE_16) {
         assert(val <= BIT_MASK_16);
-        cpu->regs[reg_t->reg - REG_A] = val;
+        if (reg_t->reg <= REG_DI)
+            cpu->EU.regs[reg_t->reg - REG_A] = val;
+        else
+            cpu->BIU.regs[reg_t->reg - REG_ES] = val;
         return;
     }
-    /** length is BIT_SIZE_8 */
-    if (reg_t->offset > BIT_SIZE_8)
+    if (reg_t->offset > BIT_SIZE_8 && reg_t->reg > REG_DI)
         assert(0);
+
     if (reg_t->offset == BIT_SIZE_0) {
-        cpu->regs[reg_t->reg - REG_A] &= 0xff00;
-        cpu->regs[reg_t->reg - REG_A] |= val & 0xff;
+        cpu->EU.regs[reg_t->reg - REG_A] &= 0xff00;
+        cpu->EU.regs[reg_t->reg - REG_A] |= val & 0xff;
         return;
     }
 
-    cpu->regs[reg_t->reg - REG_A] &= 0x00ff;
-    cpu->regs[reg_t->reg - REG_A] |= (val & 0xff) << BYTE_BIT_LENGTH;
+    cpu->EU.regs[reg_t->reg - REG_A] &= 0x00ff;
+    cpu->EU.regs[reg_t->reg - REG_A] |= (val & 0xff) << BYTE_BIT_LENGTH;
 }
 
 void write_reg_reg(cpu_t *cpu, const reg_t *dest_reg_t,
@@ -53,10 +61,8 @@ void write_reg_reg(cpu_t *cpu, const reg_t *dest_reg_t,
 u32 calculate_eff_addr_expr(const cpu_t *cpu, const eff_addr_expr_t *expr,
                             const mod_e mod) {
     i32 disp = 0;
-
     if (mod == MOD_11)
         assert(0);
-
     switch (mod) {
     case MOD_00:
         if (expr->da) {

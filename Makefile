@@ -5,7 +5,7 @@ SRC_DIR := .
 ASM_DIR := ./source
 BIN_DIR := ./assemble
 
-SRCS := $(shell find $(SRC_DIR) -name '*.c' -maxdepth 1)
+SRCS := $(shell find $(SRC_DIR) -name '*.c' -maxdepth 1 ! -name "*_test.c")
 ASMS := $(shell find $(ASM_DIR) -name '*.asm' \
 		! -name "test_05.asm" \
 		! -name "test_E*" \
@@ -20,7 +20,7 @@ format:
 	clang-format -Werror --style="{BasedOnStyle: llvm, IndentWidth: 4}" -i *.c *.h
 
 main: $(OBJS)
-	$(CC) $^ -o $@
+	$(CC) $^ -o $@ -lnotcurses -lnotcurses-core
 	rm *.o
 
 assemble: clean-assemble $(BINS)

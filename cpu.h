@@ -23,10 +23,22 @@
 #define get_df(flag_reg) (flag_reg >> 7) & 1
 #define get_tf(flag_reg) (flag_reg >> 8) & 1
 
-typedef struct cpu_t {
-    i32 ip;
+typedef struct EU_t {
+    u16 regs[REG_DI];
     u16 flags;
-    u16 regs[REG_DS];
+} EU_t;
+
+typedef struct BIU_t {
+    u32 IP;
+    u16 regs[REG_DS - REG_DI];
+    u16 queue[6];
+} BIU_t;
+
+typedef struct cpu_t {
+    u8 op_mode;
+    u8 is8088;
+    EU_t EU;
+    BIU_t BIU;
 } cpu_t;
 
 u32 calculate_eff_addr_expr(const cpu_t *cpu, const eff_addr_expr_t *expr,
